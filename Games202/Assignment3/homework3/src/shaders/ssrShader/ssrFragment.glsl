@@ -122,7 +122,15 @@ vec3 GetGBufferDiffuse(vec2 uv) {
  *
  */
 vec3 EvalDiffuse(vec3 wi, vec3 wo, vec2 uv) {
-  vec3 L = vec3(0.0);
+  vec3 n = GetGBufferNormalWorld(uv);
+  if (dot(normalize(wo), normalize(n)) <= 0.0)
+    return vec3(0.0);
+
+  float cosTheta = dot(normalize(wi), normalize(n));
+  if (cosTheta < 0.0)
+    return vec3(0.0);
+
+  vec3 L = vec3(1.0 / M_PI) * cosTheta;
   return L;
 }
 
@@ -132,7 +140,7 @@ vec3 EvalDiffuse(vec3 wi, vec3 wo, vec2 uv) {
  *
  */
 vec3 EvalDirectionalLight(vec2 uv) {
-  vec3 Le = vec3(0.0);
+  vec3 Le = uLightRadiance * GetGBufferuShadow(uv);
   return Le;
 }
 
@@ -145,8 +153,9 @@ bool RayMarch(vec3 ori, vec3 dir, out vec3 hitPos) {
 void main() {
   float s = InitRand(gl_FragCoord.xy);
 
+  vec2 uv = GetScreenCoordinate(vPosWorld.xyz);
   vec3 L = vec3(0.0);
-  L = GetGBufferDiffuse(GetScreenCoordinate(vPosWorld.xyz));
+  L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) * EvalDirectionalLight(uv);
   vec3 color = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
   gl_FragColor = vec4(vec3(color.rgb), 1.0);
 }

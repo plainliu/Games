@@ -36,6 +36,8 @@ target_compile_options(nori PUBLIC /utf-8) # MSVC unicode support
 
 用launch.vs.json配【没找到哪里生成，手动添加的，加到.vs目录】
 
+https://blog.csdn.net/aoxin/article/details/112250054
+
 ```json
 {
   "version": "0.2.1",

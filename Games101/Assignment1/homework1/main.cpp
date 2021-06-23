@@ -50,8 +50,19 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     projection <<
         zNear, 0, 0, 0,
         0, zNear, 0, 0,
-        0, 0, zNear + eye_fov, -zNear * eye_fov,
-        0, 0, zNear, 0;
+        0, 0, zNear + zFar, -zNear * zFar,
+        0, 0, 1, 0;
+
+    float height = 2 * abs(zNear) * tan( eye_fov / 180 * M_PI / 2);
+    float width = height * aspect_ratio;
+    Eigen::Matrix4f ortho;
+    ortho <<
+        2 / width, 0, 0, 0,
+        0, 2 / height, 0, 0,
+        0, 0, 2 / (zNear - zFar), -(zNear + zFar) / 2,
+        0, 0, 0, 1;
+
+    projection = ortho * projection;
 
     return projection;
 }
@@ -89,7 +100,7 @@ int main(int argc, const char** argv)
 
         r.set_model(get_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
-        r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
+        r.set_projection(get_projection_matrix(45, 1, -0.1, -50));
 
         r.draw(pos_id, ind_id, rst::Primitive::Triangle);
         cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
@@ -105,7 +116,7 @@ int main(int argc, const char** argv)
 
         r.set_model(get_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
-        r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
+        r.set_projection(get_projection_matrix(45, 1, -0.1, -50));
 
         r.draw(pos_id, ind_id, rst::Primitive::Triangle);
 

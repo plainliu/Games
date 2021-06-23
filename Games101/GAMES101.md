@@ -516,6 +516,14 @@ ModelView变换
 
 - 模型变换，视图变换，其实作用的对象都是模型（让相机位于原点|变换物体到相机坐标系，一回事）
 
+
+
+**【F3D】**
+
+引擎的摄像机只设置眼睛位置和看向的位置
+
+相当于只有g，那up和t是怎么来的【up是设置的，但与g不垂直，up与g计算出right，再由g和right计算出up】
+
 #### Projection 变换
 
 (min39)
@@ -572,29 +580,15 @@ Frustum （视锥）
 规定
 
 - 近平面不会变
-- 远平面中心不变
+- 远平面中心不变，z不变
 
 $$
-M_{persp -> ortho}
+M_{ortho}M_{persp -> ortho}
 $$
 
 
 
 ![1599284610761](GAMES101.assets\1599284610761.png)
-
-对应关系
-
----
-
-引擎的摄像机只设置眼睛位置和看向的位置
-
-相当于只有g
-
-那up和t是怎么来的
-
-【up是设置的，但与g不垂直，up与g计算出right，再由g和right计算出up】
-
-
 
 P4：min65
 $$
@@ -632,7 +626,11 @@ $$
 
 **对于近平面和原平面中间的任何一个点，经过挤压变化后是否有变化，变大了/变小了**
 
+# P5 Rasterization 1（Triangles）
 
+
+
+# P6 Rasterization 2（Antialiasing and Z-Buffering）
 
 作业0
 

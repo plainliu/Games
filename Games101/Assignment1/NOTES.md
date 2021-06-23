@@ -52,3 +52,19 @@ CMake Error at C:\liujuanjuan\github-plainliu\Programming\Graphics\Games101\Assi
 
 ## Homework1
 
+旋转矩阵：
+
+- 绕z轴旋转，直接写课件中矩阵
+
+投影矩阵：
+
+- 两个矩阵相乘，正交矩阵*挤压矩阵
+- 正交矩阵的上下左右范围通过fov和纵横比计算
+
+
+
+注意：
+
+- 作业中传入的zNear和zFar是正的，所以三角形向下。
+- 修改main中传参为负，三角形正向向上。
+

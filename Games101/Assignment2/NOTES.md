@@ -17,3 +17,19 @@ Rasterizer: /usr/local/include/eigen3/Eigen/src/Core/PlainObjectBase.h:285: void
 Segmentation fault (core dumped)
 
 - 数组越界
+
+
+
+SSAA
+
+
+
+MSAA
+
+```
+if (insideTriangle && testZbuffer)
+{
+	persent += 0.25;
+}
+```
+

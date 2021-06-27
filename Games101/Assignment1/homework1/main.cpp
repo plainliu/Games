@@ -47,6 +47,10 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     // TODO: Implement this function
     // Create the projection matrix for the given parameters.
     // Then return it.
+
+    zNear = -zNear;
+    zFar = -zFar;
+
     projection <<
         zNear, 0, 0, 0,
         0, zNear, 0, 0,
@@ -67,6 +71,25 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
     return projection;
 }
 
+Eigen::Matrix4f get_rotation(Vector3f axis, float angle)
+{
+    Eigen::Matrix4f rotation = Eigen::Matrix4f::Identity();
+
+    axis.normalize();
+    Eigen::Matrix4f J;
+    J <<
+        0, -axis.z(), axis.y(), 0,
+        axis.z(), 0, -axis.x(), 0,
+        -axis.y(), axis.x(), 0, 0,
+        0, 0, 0, 1;
+
+    angle = angle / 180 * M_PI;
+    rotation = Eigen::Matrix4f::Identity() + J * sin(angle) + J * J * (1 - cos(angle));
+    rotation(3, 3) = 1.0f;
+
+    return rotation;
+}
+
 int main(int argc, const char** argv)
 {
     float angle = 0;
@@ -84,6 +107,7 @@ int main(int argc, const char** argv)
     rst::rasterizer r(700, 700);
 
     Eigen::Vector3f eye_pos = {0, 0, 5};
+    Eigen::Vector3f rotation_axis = {0, 0, 1};
 
     std::vector<Eigen::Vector3f> pos{{2, 0, -2}, {0, 2, -2}, {-2, 0, -2}};
 
@@ -98,9 +122,10 @@ int main(int argc, const char** argv)
     if (command_line) {
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
-        r.set_model(get_model_matrix(angle));
+        // r.set_model(get_model_matrix(angle));
+        r.set_model(get_rotation(rotation_axis, angle));
         r.set_view(get_view_matrix(eye_pos));
-        r.set_projection(get_projection_matrix(45, 1, -0.1, -50));
+        r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
 
         r.draw(pos_id, ind_id, rst::Primitive::Triangle);
         cv::Mat image(700, 700, CV_32FC3, r.frame_buffer().data());
@@ -114,9 +139,10 @@ int main(int argc, const char** argv)
     while (key != 27) {
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
-        r.set_model(get_model_matrix(angle));
+        // r.set_model(get_model_matrix(angle));
+        r.set_model(get_rotation(rotation_axis, angle));
         r.set_view(get_view_matrix(eye_pos));
-        r.set_projection(get_projection_matrix(45, 1, -0.1, -50));
+        r.set_projection(get_projection_matrix(45, 1, 0.1, 50));
 
         r.draw(pos_id, ind_id, rst::Primitive::Triangle);
 
@@ -132,6 +158,22 @@ int main(int argc, const char** argv)
         }
         else if (key == 'd') {
             angle -= 10;
+        }
+        else if (key == 'x') {
+            angle = 0;
+            rotation_axis = {1, 0, 0};
+        }
+        else if (key == 'y') {
+            angle = 0;
+            rotation_axis = {0, 1, 0};
+        }
+        else if (key == 'z') {
+            angle = 0;
+            rotation_axis = {0, 0, 1};
+        }
+        else if (key == 's') {
+            angle = 0;
+            rotation_axis = pos[1];
         }
     }
 

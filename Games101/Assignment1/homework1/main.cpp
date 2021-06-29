@@ -57,16 +57,24 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio,
         0, 0, zNear + zFar, -zNear * zFar,
         0, 0, 1, 0;
 
+    // ortho: scale * trans
     float height = 2 * abs(zNear) * tan( eye_fov / 180 * M_PI / 2);
     float width = height * aspect_ratio;
-    Eigen::Matrix4f ortho;
-    ortho <<
+    Eigen::Matrix4f scale;
+    scale <<
         2 / width, 0, 0, 0,
         0, 2 / height, 0, 0,
-        0, 0, 2 / (zNear - zFar), -(zNear + zFar) / 2,
+        0, 0, 2 / (zNear - zFar), 0,
         0, 0, 0, 1;
 
-    projection = ortho * projection;
+    Eigen::Matrix4f trans;
+    trans <<
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, -(zNear + zFar) / 2,
+        0, 0, 0, 1;
+
+    projection = scale * trans * projection;
 
     return projection;
 }

@@ -47,7 +47,7 @@ static bool insideTriangle(float x, float y, const Vector3f* _v)
     Vector3f p(x, y, 0);
     for (int i = 0; i < 3; ++i)
     {
-        // in counter clockwise order, ==> left is inside
+        // in counter clockwise order ==> left is inside
         int nextp = (i + 1) % 3;
         Vector3f crs = (_v[nextp] - _v[i]).cross(p - _v[i]);
         if (crs[2] < 0)
@@ -91,7 +91,7 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
         {
             vert.x() = 0.5*width*(vert.x()+1.0);
             vert.y() = 0.5*height*(vert.y()+1.0);
-            vert.z() = vert.z() * f1 + f2;
+            // vert.z() = vert.z() * f1 + f2;
         }
 
         for (int i = 0; i < 3; ++i)
@@ -129,6 +129,9 @@ void rst::rasterizer::draw(pos_buf_id pos_buffer, ind_buf_id ind_buffer, col_buf
 //Screen space rasterization
 void rst::rasterizer::rasterize_triangle(const Triangle& t) {
     auto v = t.toVector4();
+                     std::cout << "1" << v[0].x() << " " << v[0].y()  << " "<< v[0].z() << std::endl;
+                     std::cout << "2" << v[1].x() << " " << v[1].y()  << " "<< v[1].z() << std::endl;
+                     std::cout << "3" << v[2].x() << " " << v[2].y()  << " "<< v[2].z() << std::endl;
     
     // TODO : Find out the bounding box of current triangle.
     // iterate through the pixel and find if the current pixel is inside the triangle
@@ -156,13 +159,12 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t) {
                     if (insideTriangle(samplex, sampley, t.v))
                     {
                         // If so, use the following code to get the interpolated z value.
-                        auto[alpha, beta, gamma] = computeBarycentric2D(sampley, sampley, t.v);
+                        auto[alpha, beta, gamma] = computeBarycentric2D(samplex, sampley, t.v);
                         float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
                         float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
                         z_interpolated *= w_reciprocal;
 
-                        z_interpolated = -z_interpolated;
-                        if (z_interpolated > depth_buf[get_index(x, y, subpixel_id)])
+                        if (z_interpolated < depth_buf[get_index(x, y, subpixel_id)])
                             continue;
 
                         // update z-buffer
@@ -202,7 +204,7 @@ void rst::rasterizer::clear(rst::Buffers buff)
     }
     if ((buff & rst::Buffers::Depth) == rst::Buffers::Depth)
     {
-        std::fill(depth_buf.begin(), depth_buf.end(), std::numeric_limits<float>::infinity());
+        std::fill(depth_buf.begin(), depth_buf.end(), -std::numeric_limits<float>::infinity());
     }
 }
 

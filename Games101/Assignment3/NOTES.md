@@ -125,6 +125,8 @@ launch.vs.json
 
 带参数arg
 
+F5 运行（注意选择启动项为launch.vs.json中配置对应的name名，如果启动的是exe则不带参数）
+
 
 
 报异常：

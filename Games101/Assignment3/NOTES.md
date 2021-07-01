@@ -200,5 +200,34 @@ F5 运行（注意选择启动项为launch.vs.json中配置对应的name名，�
 #include <math.h>
 ```
 
+## 过程
 
+1. 拷贝作业2代码（按照zbuffer中记录值为正做）
 
+   发现牛是背向的，而且法线显示为红红绿绿，不是作业pdf中蓝蓝紫紫的
+
+   原因：zbuffer计算错误，对比时，近的反而深度大
+
+   处理：draw方法中
+
+   ```c++
+   //Viewport transformation
+   for (auto & vert : v)
+   {
+       vert.x() = 0.5*width*(vert.x()+1.0);
+       vert.y() = 0.5*height*(vert.y()+1.0);
+       vert.z() = -vert.z() * f1 + f2; // vert.z()前加-号
+   }
+   ```
+
+   
+
+2. 
+
+## 其他发现
+
+VS中居然可以直接打开obj文件，三维显示，并且可以用鼠标操作视角和位置
+
+- 左键拖动
+- alt + 左键旋转
+- ctrl + 滚轮 缩放

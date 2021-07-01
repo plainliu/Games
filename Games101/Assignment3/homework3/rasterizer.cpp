@@ -216,7 +216,7 @@ void rst::rasterizer::draw(std::vector<Triangle *> &TriangleList) {
         {
             vert.x() = 0.5*width*(vert.x()+1.0);
             vert.y() = 0.5*height*(vert.y()+1.0);
-            vert.z() = vert.z() * f1 + f2;
+            vert.z() = -vert.z() * f1 + f2;
         }
 
         for (int i = 0; i < 3; ++i)
@@ -289,28 +289,25 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
 
                 if (zp > depth_buf[get_index(x, y)])
                     continue;
-
-                // update z-buffer
                 depth_buf[get_index(x, y)] = zp;
 
                 // TODO: Interpolate the attributes:
-                // auto interpolated_color
-                // auto interpolated_normal
-                // auto interpolated_texcoords
-                // auto interpolated_shadingcoords
+                 auto interpolated_color = alpha * t.color[0] + beta * t.color[1] + gamma * t.color[2];
+                 auto interpolated_normal = alpha * t.normal[0] + beta * t.normal[1] + gamma * t.normal[2];
+                 auto interpolated_texcoords = alpha * t.tex_coords[0] + beta * t.tex_coords[1] + gamma * t.tex_coords[2];
+                 auto interpolated_shadingcoords = Eigen::Vector3f(x, y, zp);
 
                 // Use: fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
                 // Use: payload.view_pos = interpolated_shadingcoords;
                 // Use: Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color;
                 // Use: auto pixel_color = fragment_shader(payload);
 
-                // Use: fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
-                // Use: payload.view_pos = interpolated_shadingcoords;
-                // Use: Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color;
-                // Use: auto pixel_color = fragment_shader(payload);
+                 fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
+                 payload.view_pos = interpolated_shadingcoords;
+                 auto pixel_color = fragment_shader(payload);
 
                 Vector2i p(x, y);
-                set_pixel(p, Eigen::Vector3f(100, 100, 100));
+                set_pixel(p, pixel_color);
             }
         }
     }

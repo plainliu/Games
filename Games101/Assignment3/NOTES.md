@@ -96,21 +96,6 @@ https://gitlab.com/libeigen/eigen/-/releases/3.3.9
 
 
 
-
-
-作业2
-
-## Math
-
-main.cpp中报M_PI缺失的问题
-
-```c++
-#define _USE_MATH_DEFINES
-#include <math.h>
-```
-
-
-
 ## 运行
 
 VS2019打开CMakeLists所在目录
@@ -118,14 +103,6 @@ VS2019打开CMakeLists所在目录
 
 
 编译报错get_projection_matrix缺少返回，添加个返回
-
-
-
-launch.vs.json
-
-带参数arg
-
-F5 运行（注意选择启动项为launch.vs.json中配置对应的name名，如果启动的是exe则不带参数）
 
 
 
@@ -138,6 +115,12 @@ F5 运行（注意选择启动项为launch.vs.json中配置对应的name名，�
 - 上级目录需要多几层
 
 
+
+launch.vs.json
+
+带参数arg
+
+F5 运行（注意选择启动项为launch.vs.json中配置对应的name名，如果启动的是exe则不带参数）
 
 
 
@@ -152,9 +135,50 @@ F5 运行（注意选择启动项为launch.vs.json中配置对应的name名，�
       "type": "default",
       "project": "CMakeLists.txt",
       "projectTarget": "",
-      "name": "CMakeLists.txt",
+      "name": "normal",
       "args": [
-        ""
+        "output-normal.png",
+        "normal"
+      ]
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "",
+      "name": "texture",
+      "args": [
+        "output-texture.png",
+        "texture"
+      ]
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "",
+      "name": "phong",
+      "args": [
+        "output-phong.png",
+        "phong"
+      ]
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "",
+      "name": "bump",
+      "args": [
+        "output-bump.png",
+        "bump"
+      ]
+    },
+    {
+      "type": "default",
+      "project": "CMakeLists.txt",
+      "projectTarget": "",
+      "name": "displacement",
+      "args": [
+        "output-displacement.png",
+        "displacement"
       ]
     }
   ]
@@ -162,3 +186,19 @@ F5 运行（注意选择启动项为launch.vs.json中配置对应的name名，�
 ```
 
 运行成功
+
+
+
+# 作业
+
+## Math
+
+如果代码中需要使用到宏M_PI，VS环境中是没有的，需要使用下面的方式引入宏定义
+
+```c++
+#define _USE_MATH_DEFINES
+#include <math.h>
+```
+
+
+

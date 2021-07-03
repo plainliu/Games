@@ -204,6 +204,8 @@ F5 运行（注意选择启动项为launch.vs.json中配置对应的name名，�
 
 ## 过程
 
+### Blinn phong
+
 1. 拷贝作业2代码（按照zbuffer中记录值为正做）
 
    发现牛是背向的，而且法线显示为红红绿绿，不是作业pdf中蓝蓝紫紫的
@@ -275,6 +277,31 @@ auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], v
 ```
 
 环境光，对于每个光源加一次，还是总共加一次？（环境光模拟的是间接光照，每个光源算一次应该对的）【存疑】
+
+### 纹理贴图
+
+需要通过uv从贴图上获取颜色，debug模式拉起就会崩溃
+
+- 崩溃时，u是负数
+- 下条件断点，访问调用栈，三角形的第一个顶点的u就是负数（重心坐标计算得到的u也是一个负数，访问图片位置崩溃）【先当0处理，需要进一步讨论下是否为资源的问题】
+
+Release 左右转动几次后出现崩溃，做了判断规避后也不行【为啥呢】
+
+```
+array = 0x000000721a0fec04 {-nan(ind), -nan(ind)}
+```
+
+
+
+
+
+打印warning：
+
+```
+libpng warning: iCCP: known incorrect sRGB profile
+```
+
+网上搜了是cv的检查严格，对程序没有影响，暂时不管
 
 ## 其他发现
 

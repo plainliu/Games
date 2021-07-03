@@ -200,6 +200,8 @@ F5 运行（注意选择启动项为launch.vs.json中配置对应的name名，�
 #include <math.h>
 ```
 
+然后看代码发现，global.hpp中定义了MY_PI...
+
 ## 过程
 
 1. 拷贝作业2代码（按照zbuffer中记录值为正做）
@@ -222,7 +224,57 @@ F5 运行（注意选择启动项为launch.vs.json中配置对应的name名，�
 
    
 
-2. 
+2. blinn phong做的时候一直不对，光从牛下巴照过来的，而且计算时，光强度很弱，是乘了100后才能看到下巴的光。
+
+   然后就说看看贴图，是不是光栅化有问题，结果有重心坐标小于0的？插值后得到的uv有小于0的？筛选掉小于0的着色，结果如下
+
+   基本上可以看到被剔除的点在三角形边界上
+
+3. cwiseProduct，着色模型中用到乘法，需要点对点乘的时候用这个方法
+
+![image-20210703150436635](C:\liujuanjuan\github-plainliu\Games\Games101\Assignment3\NOTES.assets\image-20210703150436635.png)
+
+着色判断是否可见（法线和观测方向余弦大于0），变成下面这样了
+
+![image-20210703152829492](C:\liujuanjuan\github-plainliu\Games\Games101\Assignment3\NOTES.assets\image-20210703152829492.png)
+
+1边缘上uv计算错误的原因：传入的坐标加了0.5导致的
+
+```c++
+
+//auto[alpha, beta, gamma] = computeBarycentric2D((float)x + 0.5f, (float)y + 0.5f, t.v);
+auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
+```
+
+问题：**load obj 拿到的数据中uv有负的，但是在计算后拿贴图纹理的时候kd没有负数了**【需要推一下】
+
+2法线和观测方向加判断，牛背没有了，原因
+
+3论坛上提到的问题，View空间得到的z拿来插值，和实际有误差
+
+http://games-cn.org/forums/topic/zuoye3-guanyushenduzhiwentizijicaidekengheyixiexiangfa/
+
+
+
+按照z=10的摄像机进行的变换，变换后，按道理，eye应该到了原点，看向z负方向
+
+那么在shader中，应该摄像机z=0了，但是shader中还是用10来计算，也就是摄像机用的世界坐标系，物体用的投影坐标系
+
+
+
+目前为止自己的代码里，两个问题
+
+1. 为啥没有牛背了
+2. 为啥phong shader中计算的光照强度那么小
+
+两个问题的原因，shadingpoint的位置插值写错了，应该用view_pos，导致插值的位置不对，计算光的方向和观测方向都离谱【需要推一下】
+
+```c++
+//auto interpolated_shadingcoords = Eigen::Vector3f(x, y, alpha * v[0].z() + beta * v[0].z() + gamma * v[0].z());
+auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1);
+```
+
+环境光，对于每个光源加一次，还是总共加一次？（环境光模拟的是间接光照，每个光源算一次应该对的）【存疑】
 
 ## 其他发现
 

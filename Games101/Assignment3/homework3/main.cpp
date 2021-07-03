@@ -8,9 +8,6 @@
 #include "Texture.hpp"
 #include "OBJ_Loader.h"
 
-#define _USE_MATH_DEFINES
-#include <math.h>
-
 Eigen::Matrix4f get_view_matrix(Eigen::Vector3f eye_pos)
 {
     Eigen::Matrix4f view = Eigen::Matrix4f::Identity();
@@ -65,7 +62,7 @@ Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float z
         0, 0, 1, 0;
 
     // ortho: scale * trans
-    float height = 2 * abs(zNear) * tan( eye_fov / 180 * M_PI / 2);
+    float height = 2 * abs(zNear) * tan( eye_fov / 180 * MY_PI / 2);
     float width = height * aspect_ratio;
     Eigen::Matrix4f scale;
     scale <<
@@ -175,7 +172,20 @@ Eigen::Vector3f phong_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular* 
         // components are. Then, accumulate that result on the *result_color* object.
-        
+
+        Eigen::Vector3f v = (eye_pos - point).normalized();
+        Eigen::Vector3f i = (light.position - point).normalized();
+        Eigen::Vector3f h = (i + v).normalized();
+
+        Eigen::Vector3f la = ka.cwiseProduct(amb_light_intensity);
+
+        float r = (light.position - point).norm();
+        Eigen::Vector3f d = (light.intensity / (r * r));
+
+        Eigen::Vector3f ld = kd.cwiseProduct(d) * std::max(0.0f, normal.dot(i));
+        Eigen::Vector3f ls = ks.cwiseProduct(d) * std::pow(std::max(0.0f, normal.dot(h)), p);
+
+        result_color += la + ld + ls;
     }
 
     return result_color * 255.f;
@@ -306,7 +316,7 @@ int main(int argc, const char** argv)
     auto texture_path = "hmap.jpg";
     r.set_texture(Texture(obj_path + texture_path));
 
-    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = normal_fragment_shader;
+    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
 
     if (argc >= 2)
     {

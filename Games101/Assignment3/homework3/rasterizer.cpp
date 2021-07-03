@@ -276,7 +276,7 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
             if (insideTriangle(x, y, t.v))
             {
                 // If so, use the following code to get the interpolated z value.
-                auto[alpha, beta, gamma] = computeBarycentric2D((float)x + 0.5f, (float)y + 0.5f, t.v);
+                auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
 
                 // TODO: Inside your rasterization loop:
                 //    * v[i].w() is the vertex view space depth value z.
@@ -292,10 +292,10 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
                 depth_buf[get_index(x, y)] = zp;
 
                 // TODO: Interpolate the attributes:
-                 auto interpolated_color = alpha * t.color[0] + beta * t.color[1] + gamma * t.color[2];
-                 auto interpolated_normal = alpha * t.normal[0] + beta * t.normal[1] + gamma * t.normal[2];
-                 auto interpolated_texcoords = alpha * t.tex_coords[0] + beta * t.tex_coords[1] + gamma * t.tex_coords[2];
-                 auto interpolated_shadingcoords = Eigen::Vector3f(x, y, zp);
+                 auto interpolated_color = interpolate(alpha, beta, gamma, t.color[0], t.color[1], t.color[2], 1);
+                 auto interpolated_normal = interpolate(alpha, beta, gamma, t.normal[0], t.normal[1], t.normal[2], 1);
+                 auto interpolated_texcoords = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1);
+                 auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1);
 
                 // Use: fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
                 // Use: payload.view_pos = interpolated_shadingcoords;

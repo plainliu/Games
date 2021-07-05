@@ -139,6 +139,7 @@ Eigen::Vector3f texture_fragment_shader(const fragment_shader_payload& payload)
     {
         // TODO: Get the texture value at the texture coordinates of the current fragment
         return_color = payload.texture->getColor(payload.tex_coords.x(), payload.tex_coords.y());
+        //return_color = payload.texture->getColorBilinear(payload.tex_coords.x(), payload.tex_coords.y());
     }
     Eigen::Vector3f texture_color;
     texture_color << return_color.x(), return_color.y(), return_color.z();
@@ -362,6 +363,7 @@ int main(int argc, const char** argv)
     std::string obj_path = "../../../models/spot/";
     std::string obj_file = "../../../models/spot/spot_triangulated_good.obj";
     std::string diffuse_texture_path = "spot_texture.png";
+    //std::string diffuse_texture_path = "spot_texture-256x256.png"; // for bilinear
     std::function<Eigen::Matrix4f(float)> mget_model_matrix = get_model_matrix;
 
     //// Marry

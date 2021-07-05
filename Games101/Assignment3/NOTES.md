@@ -317,6 +317,54 @@ TBN切线空间【详细看看】
 
 注释中的伪代码【推导】
 
+### marry
+
+getindex出界：默认2.5，太大了，出屏幕了，改成2，y向下3
+
+uv -nan(ind)：因为重心坐标计算出了-inf
+
+>可能的情况：
+>
+>1. 分母为”0”,如果分母为零，自然时不能得到一个确定的数字的。
+>2. 对负数开平方。
+>3. 有些编译器在对无穷大与无穷小的计算时也会出现此类情况。
+
+对重心坐标判断大于0并没有解决
+
+【矛盾：在三角形内，说明应该是大于0了，但是算出来的重心坐标有非法值，且alpha = 8？】
+
+算出来的重心坐标有 inf
+
+对非法uv的过滤【inf nan与其他正常数比较结果永远为非？】
+
+```cpp
+// 不可以
+if (u < 0.0f || v < 0.f || u >= 1.f || v >= 1.f)
+	continue;
+
+// 可以
+if (u >= 0.0f && v >= 0.f && u < 1.f && v < 1.f)
+	;
+else
+	continue;
+```
+
+框架中getIndex和setPixel有问题
+
+- 修改到和作业二一致
+
+getColor中uv的运用，和v_img、u_img的临界，导致u的范围是[0, 1)，而v的是(0, 1]
+
+```cpp
+Eigen::Vector3f getColor(float u, float v)
+{
+    auto u_img = u * width;
+    auto v_img = (1 - v) * height;
+    auto color = image_data.at<cv::Vec3b>(v_img, u_img);
+    return Eigen::Vector3f(color[0], color[1], color[2]);
+}
+```
+
 ## 其他发现
 
 VS中居然可以直接打开obj文件，三维显示，并且可以用鼠标操作视角和位置

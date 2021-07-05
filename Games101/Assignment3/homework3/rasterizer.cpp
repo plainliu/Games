@@ -271,8 +271,10 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
 
     for (int x = l; x <= r; ++x)
     {
+        if (x < 0 || x >= width) continue;
         for (int y = b; y <= u; ++y)
         {
+            if (y < 0 || y >= height) continue;
             if (insideTriangle(x, y, t.v))
             {
                 // If so, use the following code to get the interpolated z value.
@@ -297,9 +299,11 @@ void rst::rasterizer::rasterize_triangle(const Triangle& t, const std::array<Eig
                  auto interpolated_texcoords = interpolate(alpha, beta, gamma, t.tex_coords[0], t.tex_coords[1], t.tex_coords[2], 1);
                  auto interpolated_shadingcoords = interpolate(alpha, beta, gamma, view_pos[0], view_pos[1], view_pos[2], 1);
 
-                 // To avoid crash when u < 0.f
-                 interpolated_texcoords.x() = std::clamp(interpolated_texcoords.x(), 0.f, 1.f);
-                 interpolated_texcoords.y() = std::clamp(interpolated_texcoords.y(), 0.f, 1.f);
+                 // To avoid crash when uv out of range
+                 float u = interpolated_texcoords.x();
+                 float v = interpolated_texcoords.y();
+                 if (!(u >= 0.0f && u < 1.f && v > 0.f && v <= 1.f))
+                     continue;
 
                 // Use: fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
                 // Use: payload.view_pos = interpolated_shadingcoords;
@@ -356,13 +360,13 @@ rst::rasterizer::rasterizer(int w, int h) : width(w), height(h)
 
 int rst::rasterizer::get_index(int x, int y)
 {
-    return (height-y)*width + x;
+    return (height-y-1)*width + x;
 }
 
 void rst::rasterizer::set_pixel(const Vector2i &point, const Eigen::Vector3f &color)
 {
     //old index: auto ind = point.y() + point.x() * width;
-    int ind = (height-point.y())*width + point.x();
+    int ind = (height-point.y()-1)*width + point.x();
     frame_buf[ind] = color;
 }
 

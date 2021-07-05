@@ -47,6 +47,30 @@ Eigen::Matrix4f get_model_matrix(float angle)
     return translate * rotation * scale;
 }
 
+Eigen::Matrix4f get_model_matrix_marry(float angle)
+{
+    Eigen::Matrix4f rotation;
+    angle = angle * MY_PI / 180.f;
+    rotation << cos(angle), 0, sin(angle), 0,
+        0, 1, 0, 0,
+        -sin(angle), 0, cos(angle), 0,
+        0, 0, 0, 1;
+
+    Eigen::Matrix4f scale;
+    scale << 1.5, 0, 0, 0,
+        0, 1.5, 0, 0,
+        0, 0, 1.5, 0,
+        0, 0, 0, 1;
+
+    Eigen::Matrix4f translate;
+    translate << 1, 0, 0, 0,
+        0, 1, 0, -3,
+        0, 0, 1, 0,
+        0, 0, 0, 1;
+
+    return translate * rotation * scale;
+}
+
 Eigen::Matrix4f get_projection_matrix(float eye_fov, float aspect_ratio, float zNear, float zFar)
 {
     // TODO: Use the same projection matrix from the previous assignments
@@ -329,17 +353,33 @@ int main(int argc, const char** argv)
 {
     std::vector<Triangle*> TriangleList;
 
-    float angle = 140.0;
     bool command_line = false;
 
     std::string filename = "output.png";
     objl::Loader Loader;
-    //std::string obj_path = "../models/spot/";
+
+    float angle = 140.0;
     std::string obj_path = "../../../models/spot/";
+    std::string obj_file = "../../../models/spot/spot_triangulated_good.obj";
+    std::string diffuse_texture_path = "spot_texture.png";
+    std::function<Eigen::Matrix4f(float)> mget_model_matrix = get_model_matrix;
+
+    //// Marry
+    //angle = 40.0;
+    //obj_path = "../../../models/mary/";
+    //obj_file = "../../../models/mary/Marry.obj";
+    //diffuse_texture_path = "MC003_Kozakura_Mari.png";
+    //mget_model_matrix = get_model_matrix_marry;
+
+    //// Rock
+    //angle = 140.0;
+    //obj_path = "../../../models/rock/";
+    //obj_file = "../../../models/rock/rock.obj";
+    //diffuse_texture_path = "rock.png";
+    //mget_model_matrix = get_model_matrix_marry;
 
     // Load .obj File
-    //bool loadout = Loader.LoadFile("../models/spot/spot_triangulated_good.obj");
-    bool loadout = Loader.LoadFile("../../../models/spot/spot_triangulated_good.obj");
+    bool loadout = Loader.LoadFile(obj_file);
     for(auto mesh:Loader.LoadedMeshes)
     {
         for(int i=0;i<mesh.Vertices.size();i+=3)
@@ -357,10 +397,10 @@ int main(int argc, const char** argv)
 
     rst::rasterizer r(700, 700);
 
-    auto texture_path = "hmap.jpg";
-    r.set_texture(Texture(obj_path + texture_path));
+    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
 
-    std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = displacement_fragment_shader;
+    active_shader = texture_fragment_shader;
+    r.set_texture(Texture(obj_path + diffuse_texture_path));
 
     if (argc >= 2)
     {
@@ -371,8 +411,7 @@ int main(int argc, const char** argv)
         {
             std::cout << "Rasterizing using the texture shader\n";
             active_shader = texture_fragment_shader;
-            texture_path = "spot_texture.png";
-            r.set_texture(Texture(obj_path + texture_path));
+            r.set_texture(Texture(obj_path + diffuse_texture_path));
         }
         else if (argc == 3 && std::string(argv[2]) == "normal")
         {
@@ -387,11 +426,15 @@ int main(int argc, const char** argv)
         else if (argc == 3 && std::string(argv[2]) == "bump")
         {
             std::cout << "Rasterizing using the bump shader\n";
+            auto texture_path = "hmap.jpg";
+            r.set_texture(Texture(obj_path + texture_path));
             active_shader = bump_fragment_shader;
         }
         else if (argc == 3 && std::string(argv[2]) == "displacement")
         {
-            std::cout << "Rasterizing using the bump shader\n";
+            std::cout << "Rasterizing using the displacement shader\n";
+            auto texture_path = "hmap.jpg";
+            r.set_texture(Texture(obj_path + texture_path));
             active_shader = displacement_fragment_shader;
         }
     }
@@ -407,7 +450,7 @@ int main(int argc, const char** argv)
     if (command_line)
     {
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
-        r.set_model(get_model_matrix(angle));
+        r.set_model(mget_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45.0, 1, 0.1, 50));
 
@@ -425,7 +468,7 @@ int main(int argc, const char** argv)
     {
         r.clear(rst::Buffers::Color | rst::Buffers::Depth);
 
-        r.set_model(get_model_matrix(angle));
+        r.set_model(mget_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45.0, 1, 0.1, 50));
 

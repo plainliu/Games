@@ -359,24 +359,27 @@ int main(int argc, const char** argv)
     std::string filename = "output.png";
     objl::Loader Loader;
 
+    std::string models_path = "../models/";
+    //std::string models_path = "../../../models/";
+
     float angle = 140.0;
-    std::string obj_path = "../../../models/spot/";
-    std::string obj_file = "../../../models/spot/spot_triangulated_good.obj";
+    std::string obj_path = models_path + "spot/";
+    std::string obj_file = models_path + "spot/spot_triangulated_good.obj";
     std::string diffuse_texture_path = "spot_texture.png";
     //std::string diffuse_texture_path = "spot_texture-256x256.png"; // for bilinear
     std::function<Eigen::Matrix4f(float)> mget_model_matrix = get_model_matrix;
 
     //// Marry
     //angle = 40.0;
-    //obj_path = "../../../models/mary/";
-    //obj_file = "../../../models/mary/Marry.obj";
+    //obj_path = models_path + "/mary/";
+    //obj_file = models_path + "/mary/Marry.obj";
     //diffuse_texture_path = "MC003_Kozakura_Mari.png";
     //mget_model_matrix = get_model_matrix_marry;
 
     //// Rock
     //angle = 140.0;
-    //obj_path = "../../../models/rock/";
-    //obj_file = "../../../models/rock/rock.obj";
+    //obj_path = models_path + "/rock/";
+    //obj_file = models_path + "/rock/rock.obj";
     //diffuse_texture_path = "rock.png";
     //mget_model_matrix = get_model_matrix_marry;
 
@@ -401,8 +404,8 @@ int main(int argc, const char** argv)
 
     std::function<Eigen::Vector3f(fragment_shader_payload)> active_shader = phong_fragment_shader;
 
-    active_shader = texture_fragment_shader;
-    r.set_texture(Texture(obj_path + diffuse_texture_path));
+    //active_shader = texture_fragment_shader;
+    //r.set_texture(Texture(obj_path + diffuse_texture_path));
 
     if (argc >= 2)
     {

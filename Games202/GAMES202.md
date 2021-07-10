@@ -445,17 +445,17 @@ Games101之后重开
 
 空间中一个点到其他物体的最小的距离
 
-距离场 SDF 类似等值线
+**距离场** SDF 类似等值线
 
 移动边界，线性插值，SDF的插值，边界上SDF为0
 
-理论：最优传输（Optimal Transport）
+相关理论：最优传输（Optimal Transport）
 
 
 
 应用1：
 
-光线 Ray Tracing
+Ray Marching（sphere tracing）
 
 SDF距离，“安全距离”
 
@@ -469,9 +469,11 @@ SDF是三维的值，费存储
 
 SDF告诉了安全角度，安全角度越大，说明能看到更多光线，visible越大
 
-min{k*SDF(p) / (p-o), 1.0}
+$arcsin(SDF(p)/(p-o))$
 
-大胆的近似
+$min{k*SDF(p) / (p-o), 1.0}$
+
+近似以减少复杂运算，k用来控制软硬程度
 
 
 
@@ -485,12 +487,15 @@ min{k*SDF(p) / (p-o), 1.0}
 - 预计算
 - 高存储
 - 动态的物体需要重新算
+- artifact？
 
 
 
 sdf在字体中的应用
 
-SDF的物体不好贴纹理？
+SDF生成的物体不好贴纹理？
+
+https://github.com/protectwise/troika/tree/master/packages/troika-three-text
 
 ## 环境光照
 
@@ -514,27 +519,45 @@ IBL（Image-Based Lighting）
 
 （P5 50min）
 
-蒙特卡洛方法（采样费，慢）
+**蒙特卡洛方法**（采样费，慢）
 
 
+
+**经典近似**（glossy、smooth）
+
+Rendering equation
+
+1. 不考虑visibility
+2. lighting项和BRDF项拆分
+3. 近似，lighting项和BRDF拆成两部分积分相乘
+
+
+
+（P5 55min）
 
 Split Sum（没有采样，UE PBR应用）
 
 步骤1：
 
-BRDF？拆项
+Rendering equation拆项，把light拆出来，和BRDF就没有关系了
 
-把环境光给模糊了，类似mipmap，做不同filter的
+相当于把环境光给模糊了，类似mipmap，做不同filter的
 
-查多个方向，变成查filter后的镜面反射方向
+查多个方向，变成查filter后的**镜面反射方向**
 
 步骤2：
 
-处理公式后半部分，预计算的思想
+处理公式后半部分（BRDF），预计算的思想
 
-菲尼尔、粗糙度
+菲尼尔项拆分，依赖三个维度：基础反射率、角度、粗糙度
 
-不能预计算，使之预计算【疑】
+不能预计算，使之预计算
+
+从BRDF中拆出基础反射率R0，然后就只剩下角度和粗糙度有关的，即二维，预计算成一张表，通过角度和粗糙度查询对应积分的结果， 实时中再和R0做运算
+
+![image-20210710142440618](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210710142440618.png)
+
+![image-20210710142548242](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210710142548242.png)
 
 # P6 Real-time Environment Mapping
 
@@ -543,6 +566,10 @@ BRDF？拆项
 PRT
 
 Precomputed Radiance Transfer
+
+
+
+问题：环境光照和全局光照的概念
 
 
 
@@ -555,6 +582,8 @@ LTC
 SH：球面谐波函数
 
 
+
+## 环境光阴影
 
 环境光、阴影
 
@@ -576,7 +605,7 @@ SH：球面谐波函数
 
 
 
-PRT知识储备
+## PRT知识储备
 
 1. 频域
 
@@ -596,6 +625,8 @@ PRT知识储备
 
 
 
+## 实时环境光照
+
 33min
 
 先做Shading
@@ -608,66 +639,61 @@ SH类似傅里叶展开，从低频到高频
 
 勒让德多项式
 
-SH基函数的系数，数学上投影（点乘）
+表示每一个基函数的系数
+
+求SH基函数的系数，数学上投影（点乘）
 
 Render中取前几阶，去掉高阶的项
 
-基函数正交
-
-（用笛卡尔坐标系类比）
-
-【隐隐感觉到大学数学的有用之处】
+SH基函数正交（用笛卡尔坐标系类比理解）
 
 
 
-Prefiltering
+Prefiltering + 镜面反射查询 = 无采样+多查询
 
 Diffuse BRDF像一个低通滤波器
 
 通过Diffuse BRDF的阶来判断用几阶的信息描述光照
 
+选择前3阶
 
+SH适合描述低频的信息
+
+
+
+Next：
+
+- 引入阴影
+- 不止diffuse，基函数思路解决glossy的问题
 
 PRT
 
+- 阴影
+- 全局光照
 
+## PRT
 
-## 作业2
+### diffuse
 
-C++部分预计算
+考虑visibility
 
-- CMake + C++17
+![image-20210710155410786](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210710155410786.png)
 
-JS部分渲染
+lighting用SH基函数表示
 
+预计算light transport，也是球面函数，在只有光照变化的情况下，light transport可以预计算保存下来
+$$
+/rho * /sum l_i*T_i
+$$
+visibility预计算了，说明场景中的物体不能动
 
+可以旋转环境光，因为SH的特性（旋转环境光，等价于旋转SH基函数，得到新的线性组合）
 
-# C++ Windows 编译
-
-cmake：官网下载msi安装程序，按照步骤安装，并添加path到系统目录
-
-编译器
-
-
+（打表查询新的线性组合【疑】）
 
 # P7 Real-time Global Illumination
 
-## 环境光照
-
-SH
-
-- 上节课是diffuse
-- 这节课看看glossy
-
-wavelet
-
-
-
-RSM
-
-LPV
-
-
+## PRT
 
 PRT，拆
 
@@ -677,37 +703,41 @@ PRT，拆
 应用时
 
 - 光照项和LT再结合
-- 这里从n方到n，利用到sh的正交性，点成
+- 这里从n方到O(n)，利用到sh的正交性，点乘
 
 
 
 计算的时候是计算顶点，再插值
 
-### glossy sh
+### glossy
 
 对于glossy的情况，BRDF不一样，是四维的。不止是i的函数还是o的函数，所以对于不同的o，得到的LT是不一样的。
 
-18min
+light Transport的维度增加，和观测方向o有关
 
-LT转成向量
+再将Light Transport投影到SH上
 
+从向量变成了矩阵，LT转成向量
 
+代价：
 
-正常情况下，diffuse 3、4、5阶，科研10阶也不够
+- 存储增加
+- render计算复杂程度增加
 
-glossy稍微需要高频一些
+### 复杂度
 
-- 向量和矩阵
+- 正常情况下，diffuse 3阶
+- glossy4、5等，科研10阶也不够
 
+LE ： 光路表达（light - eye）
 
+LSDE： caustics 焦散
 
-LE
+PRT思路，LE中间的，即light transport
 
-光路表达
+PRT不适合做高频的情况
 
-caustics 焦散
-
-
+找方式解决PRT的缺点
 
 最难的是发现问题，而不是解决问题
 
@@ -723,9 +753,9 @@ wavelet小波
 
 Haar 小波
 
-一层一层保留高频，可以比sh描述更高频的信息，类似四叉数
+一层一层保留高频，可以比sh描述更高频的信息，类似四叉数。压缩质量好。
 
-jpeg使用类似小波的压缩方式
+jpeg使用类似小波的压缩方式，离散余弦变换。
 
 
 
@@ -764,9 +794,7 @@ RTR，全局光照：
 
 L（Primerey Light）-Q（次级光源，被直接光照照到的物体）-P（物体）-眼睛
 
-
-
-## RSM (Reflective Shadow Maps)
+### RSM (Reflective Shadow Maps)
 
 过程
 
@@ -994,5 +1022,116 @@ Shading
 
 可以自然地做出很多效果
 
+- Sharp and blurry reflections
+- Contact hardening
+- Specular elongation
+- Per-picel roughness and normal
+
 提高部分……
+
+# P10 Real-Time Physically-Based Materials(surface models)
+
+PBR和PBR材质
+
+实时渲染中的PB不是真正的PB
+
+PBR材质
+
+- surfaces 表面
+
+  - 微表面模型
+  - Disney（非PBR）
+
+- volumes 体积
+
+  光线作用一次和多次分离的方法（云、头发等）
+
+保证速度的前提下，把离线的效果带到实时
+
+## 微表面的BRDF
+
+菲涅尔项：有多少比率的能量被反射掉
+
+MDF：法线分布
+
+- 分布相近：glossy
+- 复杂：diffuse
+
+
+
+NDF(Normal Distribution Function)
+
+- 法线分布（与正态无关）
+- 模型：Beckmann、GGX、Yan…
+
+二维
+
+半球上分布的信息，二维表示：从上往下“拍扁”
+
+因变量：各个方向
+
+Beckmann：类似高斯【疑】
+
+（各向同性）
+
+坡度空间：保证微表面的方向不会向下
+
+GGX（TR）（作业）：
+
+- 相比Beckmann，多“长尾巴”
+- 衰减速度慢，更自然的高光和diffuse效果
+
+Generalized TR
+
+
+
+Shadowing-Masking Term
+
+grazing angle微表面的自遮挡问题
+
+让grazing angle变暗
+
+
+
+问题：（白炉测试）
+
+越粗糙，越暗（能量丢失）
+
+Kulla-Conty近似
+
+没有颜色 1-Eu
+
+有颜色 平均Frensel
+
+
+
+不要在微表面的BRDF上加diffuse！
+
+# P10 Real-Time Physically-Based Materials(surface models cont.)
+
+LTC
+
+线性变换的余弦
+
+## Disney principled BRDF
+
+【疑】这里几乎没听懂
+
+
+
+## 作业2
+
+C++部分预计算
+
+- CMake + C++17
+
+JS部分渲染
+
+
+
+# C++ Windows 编译
+
+cmake：官网下载msi安装程序，按照步骤安装，并添加path到系统目录
+
+编译器
 

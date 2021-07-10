@@ -4,7 +4,9 @@
 
 下载作业
 
-VS2019直接打开prt目录，能够用CMakeLists编译
+## 编译
+
+VS2019直接打开prt目录，用CMakeLists编译
 
 第一次编译，报错
 
@@ -18,8 +20,6 @@ C:\liujuanjuan\github-plainliu\Programming\Graphics\Games202\Assignment2\prt\src
 
 不带bom头的utf-8文件，在vs中编译，默认utf-8。
 
-结果：
-
 - 导致中文注释吞换行符
 
 添加 win32 target_link_libraries前，line112加一行
@@ -30,11 +30,13 @@ target_compile_options(nori PUBLIC /utf-8) # MSVC unicode support
 
 添加后编译成功
 
-
+## 运行
 
 运行时需要场景地址作为参数传入
 
-用launch.vs.json配【没找到哪里生成，手动添加的，加到.vs目录】
+添加launch.vs.json【右键CMakeLists.txt--默认】
+
+配launch.vs.json：
 
 https://blog.csdn.net/aoxin/article/details/112250054
 
@@ -49,7 +51,7 @@ https://blog.csdn.net/aoxin/article/details/112250054
       "projectTarget": "",
       "name": "CMakeLists.txt",
       "args": [
-        "C:\\liujuanjuan\\github-plainliu\\Programming\\Graphics\\Games202\\Assignment2\\prt\\scenes\\prt.xml"
+        "C:\\liujuanjuan\\github-plainliu\\Games\\Games202\\Assignment2\\prt\\scenes\\prt.xml"
       ]
     }
   ]
@@ -58,7 +60,7 @@ https://blog.csdn.net/aoxin/article/details/112250054
 
 运行成功
 
-
+## 增加Release配置
 
 目前只有x64-Debug，Debug比Release慢。
 
@@ -100,3 +102,58 @@ CMakeSettings.json 添加x64-Release配置，从debug复制过来
 }
 ```
 
+# 作业
+
+## 预计算球谐系数
+
+问题：
+
+1. 线性空间是什么样的概念，gamma矫正作用机制
+2. le是啥，为啥用采样点的值直接作为le的值
+3. 将光照投影到球谐函数上得到系数，公式是怎么来的
+4. 为啥作业中的w可以用面积
+
+天空盒-环境光-SH表示
+
+- 已知采样点，计算每个通道的球谐函数系数
+- 已知采样点（每个像素），采样点方向，采样点的面积
+
+
+
+SHcoeff = Z S Lenv(ωi)SH(ωi)dω
+
+SHdcoeff = X i Lenv(ωi)SH(ωo)∆ω
+
+
+
+Lenv(ωi)即对应ωi处对应的Le值
+
+【推导？】
+
+
+
+2.2.1 Diffuse Unshadowed
+
+伪代码便利已经在框架中实现，`sh::ProjectFunction`
+
+n_samples开放得到$\theta \ph$两个方向采样的数量，按照立体角平均分隔，每个小区间中采样。
+
+`std::mt19937`高性能生成随机数。
+
+
+
+问题：
+
+- 为什么是把H投影到SH？
+
+  MDU = max(Nx · ωi , 0)  投影到SH
+
+- `sh::ProjectFunction`中没有和sample数量对应的每个delta值相关的计算，为什么没有sample数量越大，求得的系数越大的问题？
+
+- LightTransport和通道有没有关系？环境光的SH结果中有RGB，框架代码在light transport部分没有看到相关的
+
+
+
+2.2.1 Diffuse Shadowed
+
+增加了visibility项，计算某个顶点的SH系数时，每个方向除了判断cos大于0，看该顶点与当前采样方向中间有没有遮挡

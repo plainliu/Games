@@ -36,6 +36,10 @@ class WebGLRenderer {
 
             // Shadow pass
             if (this.lights[l].entity.hasShadowMap == true) {
+                gl.bindFramebuffer(gl.FRAMEBUFFER, this.lights[l].entity.fbo);
+                gl.clearColor(1.0, 1.0, 1.0, 1.0); // Clear to black, fully opaque
+                gl.clearDepth(1.0); // Clear everything
+                gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
                 for (let i = 0; i < this.shadowMeshes.length; i++) {
                     this.shadowMeshes[i].draw(this.camera);
                 }

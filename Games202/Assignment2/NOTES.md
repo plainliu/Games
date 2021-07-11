@@ -148,7 +148,7 @@ n_samples开放得到$\theta \ph$两个方向采样的数量，按照立体角�
 
   MDU = max(Nx · ωi , 0)  投影到SH
 
-- `sh::ProjectFunction`中没有和sample数量对应的每个delta值相关的计算，为什么没有sample数量越大，求得的系数越大的问题？
+- `sh::ProjectFunction`中没有和sample数量对应的每个delta值相关的计算，为什么没有sample数量越大，求得的系数越大的问题？（蒙特卡洛采样数）
 
 - LightTransport和通道有没有关系？环境光的SH结果中有RGB，框架代码在light transport部分没有看到相关的
 
@@ -157,3 +157,38 @@ n_samples开放得到$\theta \ph$两个方向采样的数量，按照立体角�
 2.2.1 Diffuse Shadowed
 
 增加了visibility项，计算某个顶点的SH系数时，每个方向除了判断cos大于0，看该顶点与当前采样方向中间有没有遮挡
+
+
+
+对比pdf效果图，我的结果偏暗
+
+和pi有没有关系？
+
+http://games-cn.org/forums/topic/zuoyeziliao-daimakanwu/
+
+## 实时
+
+室内场景对比，要黑很多
+
+除以pi
+
+除以2.2？
+
+
+
+原因：
+
+1. 低级错误：vs计算点乘时gb通道用的r通道计算的，所以rgb全部是一个值，导致看起来灰色到黑色，没有环境光的颜色
+2. 需要pow(1/2.2)，计算后和prt中计算的颜色才一样
+
+问题：
+
+1. gamma矫正为啥prt不需要，而实时需要做
+2. 群友提到的除以pi的问题，是在哪里搞，目前没有除以pi，prt和实时端颜色是一致的（康奈尔box）
+
+吸色调试法
+
+另，web上切换环境贴图，light参数没有切换
+
+
+

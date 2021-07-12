@@ -211,3 +211,32 @@ isFinite() 函数用于检查其参数是否是无穷大。
 
 反射光总体颜色偏亮，原因是每个光的权重算错了，1 / sample 给复制成了sh的 4pi / sample。
 
+
+
+## 环境光球谐旋转 (bonus)
+
+SH性质
+
+- 球谐函数具有旋转不变形性
+- 对每层 band 上的 SH coefficient，可以分别在上面进行旋 转，并且这个旋转是线性变化
+
+注意：
+
+- 修改shader构造，updatedInRealTime类型，然后在render中传入光的预计算数据
+
+做的过程中的问题
+
+1. 文档查阅
+
+   相关文档
+
+   https://glmatrix.net/docs/module-vec4.html
+
+   [math.js | an extensive math library for JavaScript and Node.js (mathjs.org)](https://mathjs.org/docs/datatypes/matrices.html)
+
+   [math.js | an extensive math library for JavaScript and Node.js (mathjs.org)](https://mathjs.org/docs/reference/functions.html#matrix-functions)
+
+2. 直接看pdf盲目套公式，没有效果
+
+   自己手推一遍，发现问题，缺少转置
+

@@ -1,13 +1,15 @@
 class PRTMaterial extends Material {
 
     constructor(vertexShader, fragmentShader) {
-        let prtlight = getMat3ValueFromRGB(precomputeL[guiParams.envmapId])
+        // let prtlight = getMat3ValueFromRGB(precomputeL[guiParams.envmapId])
 
-        console.log(prtlight);
         super({
-            'uPrecomputeLR': { type: 'matrix3fv', value: prtlight[0] },
-            'uPrecomputeLG': { type: 'matrix3fv', value: prtlight[1] },
-            'uPrecomputeLB': { type: 'matrix3fv', value: prtlight[2] },
+            // 'uPrecomputeLR': { type: 'matrix3fv', value: prtlight[0] },
+            // 'uPrecomputeLG': { type: 'matrix3fv', value: prtlight[1] },
+            // 'uPrecomputeLB': { type: 'matrix3fv', value: prtlight[2] },
+            'uPrecomputeLR': { type: 'updatedInRealTime', value: null },
+            'uPrecomputeLG': { type: 'updatedInRealTime', value: null },
+            'uPrecomputeLB': { type: 'updatedInRealTime', value: null },
         }, [
             'aPrecomputeLT'
         ], vertexShader, fragmentShader, null);

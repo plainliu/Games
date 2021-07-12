@@ -185,10 +185,29 @@ http://games-cn.org/forums/topic/zuoyeziliao-daimakanwu/
 
 1. gamma矫正为啥prt不需要，而实时需要做
 2. 群友提到的除以pi的问题，是在哪里搞，目前没有除以pi，prt和实时端颜色是一致的（康奈尔box）
+3. vs计算颜色时，L和LT系数点乘计算得颜色，为啥没有sh基函数的事
 
 吸色调试法
 
 另，web上切换环境贴图，light参数没有切换
 
+- 框架中是加载模型的时候就给定的，ui切换模型不会重新加载（暂时忽略）
 
+## Diffuse Inter-reflection(bonus)
+
+shadow是自遮挡
+
+增加反射
+
+Diffuse shadowed + 
+
+isFinite() 函数用于检查其参数是否是无穷大。
+
+如果 number 是 NaN（非数字），或者是正、负无穷大的数，则返回 false
+
+只显示一次bounce的结果，眼睛位置和额头位置固定显示几个亮点，颜色值异常大：
+
+- 定位发现，创建的数组，初始值本身不对：均赋值为0后再运算
+
+反射光总体颜色偏亮，原因是每个光的权重算错了，1 / sample 给复制成了sh的 4pi / sample。
 

@@ -240,6 +240,53 @@ public:
         if (m_Type == Type::Interreflection)
         {
             // TODO: leave for bonus
+            double weight = 1.0 / m_SampleCount;
+            auto interReflectionFunc = [&](Eigen::MatrixXf& indirectLight, Eigen::MatrixXf& outTransportSHCoeffs) -> Eigen::MatrixXf& {
+
+                for (int i = 0; i < mesh->getVertexCount(); i++)
+                {
+                    for (int j = 0; j < SHCoeffLength; j++)
+                        outTransportSHCoeffs.col(i).coeffRef(j) = 0;
+
+                    const Point3f &v = mesh->getVertexPositions().col(i);
+                    const Normal3f &n = mesh->getVertexNormals().col(i);
+                    auto shFunc = [&](double phi, double theta) -> double {
+                        Eigen::Array3d d = sh::ToVector(phi, theta);
+                        const auto wi = Vector3f(d.x(), d.y(), d.z());
+
+                        double H = wi.dot(n);
+                        if (H <= 0.0)
+                            return 0;
+
+                        Intersection its;
+                        if (! scene->rayIntersect(Ray3f(v, wi.normalized()), its))
+                            return 0;
+
+                        const Eigen::Matrix<Vector3f::Scalar, SHCoeffLength, 1>
+                            sh0 = indirectLight.col(its.tri_index.x()),
+                            sh1 = indirectLight.col(its.tri_index.y()),
+                            sh2 = indirectLight.col(its.tri_index.z());
+                        auto &shCoeff = sh0 * its.bary.x() + sh1 * its.bary.y() + sh2 * its.bary.z();
+
+                        for (int j = 0; j < SHCoeffLength; j++)
+                            outTransportSHCoeffs.col(i).coeffRef(j) += shCoeff[j] * H * weight;
+
+                        return H;
+                    };
+                    auto shCoeff = sh::ProjectFunction(SHOrder, shFunc, m_SampleCount);
+                }
+                return outTransportSHCoeffs;
+            };
+
+            // m_Bounce
+            Eigen::MatrixXf inTransportSHCoeffs, outTransportSHCoeffs;
+            inTransportSHCoeffs = m_TransportSHCoeffs;
+            outTransportSHCoeffs.resize(SHCoeffLength, mesh->getVertexCount());
+            for (int i = 0; i < m_Bounce; ++i)
+            {
+                m_TransportSHCoeffs += interReflectionFunc(inTransportSHCoeffs, outTransportSHCoeffs);
+                inTransportSHCoeffs = outTransportSHCoeffs;
+            }
         }
 
         // Save in face format

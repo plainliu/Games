@@ -114,7 +114,6 @@ async function GAMES202Main() {
 			precomputeL[i][j] = lineArray;
 		}
 	}
-	console.log(precomputeL);
 
 	// TODO: load model - Add your Material here
 	// loadOBJ(renderer, 'assets/bunny/', 'bunny', 'PRTMaterial', boxTransform);

@@ -73,7 +73,20 @@ void bezier(const std::vector<cv::Point2f> &control_points, cv::Mat &window)
     {
         auto point = recursive_bezier(control_points, t);
         //auto point = algebraic_bezier(control_points, t);
-        window.at<cv::Vec3b>(point.y, point.x)[1] = 255;
+
+        // window.at<cv::Vec3b>(point.y, point.x)[1] = 255;
+        double x0 = std::floor(point.x);
+        double y0 = std::floor(point.y);
+        for (int i = 0; i <= 1; ++i)
+        {
+            for (int j = 0; j <= 1; ++j)
+            {
+                double px = x0 + i, py = y0 + j;
+                double d = std::sqrt((point.x - px) * (point.x - px) + (point.y - py) * (point.y - py));
+                double weight = 1 - d / std::sqrt(2);
+                window.at<cv::Vec3b>(py, px)[1] = std::max(window.at<cv::Vec3b>(py, px)[1], (uchar)(255 * weight));
+            }
+        }
     }
 }
 

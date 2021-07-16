@@ -92,3 +92,14 @@ https://www.bilibili.com/video/BV1X7411F744?p=15 29min
 转换到以法线为一个轴的坐标系中计算，方便很多，反射直接加负号即可，再转回去。
 
 卡在了镜面反射计算……
+
+
+
+**蒙特卡洛方法**
+
+
+
+目前RayMarching的结果不对，平面上靠近eye的位置有个圆弧
+
+![image-20210716234508025](C:\liujuanjuan\github-plainliu\Games\Games202\Assignment3\NOTES.assets\image-20210716234508025.png)
+

@@ -145,6 +145,27 @@ vec3 EvalDirectionalLight(vec2 uv) {
 }
 
 bool RayMarch(vec3 ori, vec3 dir, out vec3 hitPos) {
+  float marchstep = 0.05;
+  dir = normalize(dir);
+  for (int i = 1; i < 999; ++i) {
+    vec3 curpos = ori + dir * marchstep * float(i);
+    vec2 uv = GetScreenCoordinate(curpos);
+    // uv = clamp(uv, vec2(0.0), vec2(1.0));
+    // if (uv.x < 0.0 || uv.y < 0.0)
+    //   continue;
+    float curdep = GetDepth(curpos);
+    float sendep = GetGBufferDepth(uv);
+    if (curdep < sendep)
+      continue;
+
+    // first march
+    if (i == 1)
+      return false;
+
+    // hitPos.xyz = GetGBufferPosWorld(uv).xyz;
+    hitPos.xyz = curpos;
+    return true;
+  }
   return false;
 }
 
@@ -155,7 +176,48 @@ void main() {
 
   vec2 uv = GetScreenCoordinate(vPosWorld.xyz);
   vec3 L = vec3(0.0);
-  L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) * EvalDirectionalLight(uv);
-  vec3 color = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
-  gl_FragColor = vec4(vec3(color.rgb), 1.0);
+  // L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) * EvalDirectionalLight(uv);
+
+  vec3 n = GetGBufferNormalWorld(uv);
+  vec3 b1, b2;
+  LocalBasis(n, b1, b2);
+  mat3 tbn = mat3(normalize(b1), normalize(b2), normalize(n));
+
+  // Get wi
+  vec3 wo = uCameraPos - vPosWorld.xyz;
+  float cosin = dot(normalize(n), normalize(wo));
+  vec3 wi = normalize(n) * 2.0 * cosin - wo;
+
+  // Test: wi dir
+  // vec3 wo2 = normalize(n) * 2.0 * cosin - wi;
+  // L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, wo2, uv) * EvalDirectionalLight(uv);
+
+  // mirror reflection
+  vec3 hitpos = vec3(0.0);
+  if (RayMarch(vPosWorld.xyz, wi, hitpos)) {
+    // vec2 hituv = GetScreenCoordinate(hitpos.xyz);
+
+    // vec3 color = pow(clamp(GetGBufferDiffuse(hituv), vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
+    // gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(vec3(1.0), 1.0);
+    return;
+  }
+  gl_FragColor = vec4(vec3(1.0, 0.0, 0.0), 1.0);
+
+  // indirect reflection
+  // vec3 indirect = vec3(0.0);
+  // for (int i = 0; i < SAMPLE_NUM; ++i) {
+  //   float pdf = 0.0;
+  //   vec3 dir = tbn * SampleHemisphereCos(s, pdf);
+  //   vec3 hitpos = vec3(0.0);
+  //   if (RayMarch(vPosWorld.xyz, dir, hitpos)) {
+  //     vec2 hituv = GetScreenCoordinate(hitpos.xyz);
+  //     indirect += EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) / pdf * EvalDiffuse(uLightDir, uCameraPos - hitpos.xyz, hituv) * EvalDirectionalLight(hituv);
+  //   }
+  // }
+  // indirect /= float(SAMPLE_NUM);
+
+  // vec3 color = pow(clamp(L + indirect, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
+  // vec3 color = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
+  // gl_FragColor = vec4(vec3(color.rgb), 1.0);
 }

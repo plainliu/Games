@@ -112,3 +112,14 @@ https://www.bilibili.com/video/BV1X7411F744?p=15 29min
 
 - march步长0.05时效果可以，减小步长，效果反而不好【为啥】
 
+
+
+raymarching中
+
+- uv来控制0-1之间，超出范围不trace
+- 对于屏幕空间的光线追踪，如果场景的壳存在大的gap，而tracing的时候穿过gap，这样按道理不应该match到东西，但实际搞出来会match到gap上边界上的值，需要做处理。处理方式【？】
+
+
+
+现在做出来，看洞穴的效果，要比pdf的暗
+

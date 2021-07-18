@@ -162,6 +162,10 @@ bool RayMarch(vec3 ori, vec3 dir, out vec3 hitPos) {
     if (i == 1)
       return false;
 
+    // at the large gap in scene surface
+    if (curdep - sendep > marchstep)
+      return false;
+
     hitPos.xyz = curpos;
     return true;
   }
@@ -175,7 +179,7 @@ void main() {
 
   vec2 uv = GetScreenCoordinate(vPosWorld.xyz);
   vec3 L = vec3(0.0);
-  // L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) * EvalDirectionalLight(uv);
+  L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) * EvalDirectionalLight(uv);
   // vec3 color = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
   // return;
 
@@ -197,29 +201,32 @@ void main() {
   // return;
 
   // mirror reflection
-  vec3 hitpos = vec3(0.0);
-  if ( RayMarch(vPosWorld.xyz, wi, hitpos)) {
-    vec2 hituv = GetScreenCoordinate(hitpos.xyz);
+  // vec3 hitpos = vec3(0.0);
+  // if (RayMarch(vPosWorld.xyz, wi, hitpos)) {
+  //   vec2 hituv = GetScreenCoordinate(hitpos.xyz);
 
-    vec3 color = pow(clamp(GetGBufferDiffuse(hituv), vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
-    gl_FragColor = vec4(color, 1.0);
-    return;
-  }
-  gl_FragColor = vec4(vec3(0.0), 1.0);
+  //   vec3 color = pow(clamp(GetGBufferDiffuse(hituv), vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
+  //   gl_FragColor = vec4(color, 1.0);
+  //   return;
+  // }
+  // gl_FragColor = vec4(vec3(0.0), 1.0);
+  // return;
 
   // indirect reflection
-  // vec3 indirect = vec3(0.0);
-  // for (int i = 0; i < SAMPLE_NUM; ++i) {
-  //   float pdf = 0.0;
-  //   vec3 dir = tbn * SampleHemisphereCos(s, pdf);
-  //   vec3 hitpos = vec3(0.0);
-  //   if (RayMarch(vPosWorld.xyz, dir, hitpos)) {
-  //     vec2 hituv = GetScreenCoordinate(hitpos.xyz);
-  //     indirect += EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) / pdf * EvalDiffuse(uLightDir, uCameraPos - hitpos.xyz, hituv) * EvalDirectionalLight(hituv);
-  //   }
-  // }
-  // indirect /= float(SAMPLE_NUM);
+  vec3 indirect = vec3(0.0);
+  for (int i = 0; i < SAMPLE_NUM; ++i) {
+    float pdf = 0.0;
+    vec3 dir = tbn * SampleHemisphereCos(s, pdf);
+    vec3 hitpos = vec3(0.0);
+    if (RayMarch(vPosWorld.xyz, dir, hitpos)) {
+      vec2 hituv = GetScreenCoordinate(hitpos.xyz);
+      indirect += GetGBufferDiffuse(uv)
+        * EvalDiffuse(dir, uCameraPos - vPosWorld.xyz, uv) / pdf // BSDF(shading point)
+        * GetGBufferDiffuse(hituv) * EvalDiffuse(uLightDir, uCameraPos - hitpos.xyz, hituv) * EvalDirectionalLight(hituv); // Light(sample point)
+    }
+  }
+  indirect /= float(SAMPLE_NUM);
 
-  // vec3 color = pow(clamp(L + indirect, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
-  // gl_FragColor = vec4(vec3(color.rgb), 1.0);
+  vec3 color = pow(clamp(L + indirect, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
+  gl_FragColor = vec4(vec3(color.rgb), 1.0);
 }

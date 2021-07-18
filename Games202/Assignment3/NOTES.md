@@ -103,3 +103,12 @@ https://www.bilibili.com/video/BV1X7411F744?p=15 29min
 
 ![image-20210716234508025](C:\liujuanjuan\github-plainliu\Games\Games202\Assignment3\NOTES.assets\image-20210716234508025.png)
 
+找了一整天，计算wi的时候wo没有归一化，导致计算的wi不正确
+
+- 假定y方向为法线方向，直接根据xoz平面对称，写出wi_up，测试发现这时地面上的反射是正常的，所以问题在wi上
+- 一句一句检查，没有归一化……
+
+镜面反射效果
+
+- march步长0.05时效果可以，减小步长，效果反而不好【为啥】
+

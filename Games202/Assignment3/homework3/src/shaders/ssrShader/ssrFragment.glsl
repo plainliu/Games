@@ -150,9 +150,9 @@ bool RayMarch(vec3 ori, vec3 dir, out vec3 hitPos) {
   for (int i = 1; i < 999; ++i) {
     vec3 curpos = ori + dir * marchstep * float(i);
     vec2 uv = GetScreenCoordinate(curpos);
-    // uv = clamp(uv, vec2(0.0), vec2(1.0));
-    // if (uv.x < 0.0 || uv.y < 0.0)
-    //   continue;
+    if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0)
+      return false;
+
     float curdep = GetDepth(curpos);
     float sendep = GetGBufferDepth(uv);
     if (curdep < sendep)
@@ -162,7 +162,6 @@ bool RayMarch(vec3 ori, vec3 dir, out vec3 hitPos) {
     if (i == 1)
       return false;
 
-    // hitPos.xyz = GetGBufferPosWorld(uv).xyz;
     hitPos.xyz = curpos;
     return true;
   }
@@ -177,32 +176,36 @@ void main() {
   vec2 uv = GetScreenCoordinate(vPosWorld.xyz);
   vec3 L = vec3(0.0);
   // L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) * EvalDirectionalLight(uv);
+  // vec3 color = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
+  // return;
 
-  vec3 n = GetGBufferNormalWorld(uv);
+  vec3 n = normalize(GetGBufferNormalWorld(uv));
   vec3 b1, b2;
   LocalBasis(n, b1, b2);
   mat3 tbn = mat3(normalize(b1), normalize(b2), normalize(n));
 
   // Get wi
-  vec3 wo = uCameraPos - vPosWorld.xyz;
-  float cosin = dot(normalize(n), normalize(wo));
-  vec3 wi = normalize(n) * 2.0 * cosin - wo;
+  vec3 wo = normalize(uCameraPos - vPosWorld.xyz);
+  float cosin = dot(n, wo);
+  vec3 wi = n * 2.0 * cosin - wo;
 
   // Test: wi dir
   // vec3 wo2 = normalize(n) * 2.0 * cosin - wi;
   // L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, wo2, uv) * EvalDirectionalLight(uv);
+  // vec3 wi_up = vec3(-wo.x, wo.y, -wo.z); // assume n is (0, 1, 0)
+  // gl_FragColor = vec4(wo, 1.0);
+  // return;
 
   // mirror reflection
   vec3 hitpos = vec3(0.0);
-  if (RayMarch(vPosWorld.xyz, wi, hitpos)) {
-    // vec2 hituv = GetScreenCoordinate(hitpos.xyz);
+  if ( RayMarch(vPosWorld.xyz, wi, hitpos)) {
+    vec2 hituv = GetScreenCoordinate(hitpos.xyz);
 
-    // vec3 color = pow(clamp(GetGBufferDiffuse(hituv), vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
-    // gl_FragColor = vec4(color, 1.0);
-    gl_FragColor = vec4(vec3(1.0), 1.0);
+    vec3 color = pow(clamp(GetGBufferDiffuse(hituv), vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
+    gl_FragColor = vec4(color, 1.0);
     return;
   }
-  gl_FragColor = vec4(vec3(1.0, 0.0, 0.0), 1.0);
+  gl_FragColor = vec4(vec3(0.0), 1.0);
 
   // indirect reflection
   // vec3 indirect = vec3(0.0);
@@ -218,6 +221,5 @@ void main() {
   // indirect /= float(SAMPLE_NUM);
 
   // vec3 color = pow(clamp(L + indirect, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
-  // vec3 color = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
   // gl_FragColor = vec4(vec3(color.rgb), 1.0);
 }

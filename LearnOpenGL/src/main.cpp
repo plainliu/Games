@@ -7,6 +7,10 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 const std::string gRootPath = "../../../";
 
 const unsigned int gSreenWidth = 800;
@@ -178,6 +182,14 @@ int main( )
 
         //glBindVertexArray( VAO );
         //glDrawArrays( GL_TRIANGLES, 0, 3 );
+
+        glm::mat4 trans = glm::mat4( 1.0f );
+        trans = glm::translate( trans, glm::vec3( 0.5f, -0.5f, 0.0f ) );
+        trans = glm::rotate( trans, (float)glfwGetTime( ), glm::vec3( 0.0, 0.0, 1.0 ) );
+        //trans = glm::scale( trans, glm::vec3( 0.5, 0.5, 0.5 ) );
+
+        unsigned int translocation = glGetUniformLocation( shader.ID, "transform" );
+        glUniformMatrix4fv( translocation, 1, GL_FALSE, glm::value_ptr( trans ) );
 
         glActiveTexture( GL_TEXTURE0 );
         glBindTexture( GL_TEXTURE_2D, texture1 );

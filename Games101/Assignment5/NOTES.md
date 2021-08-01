@@ -37,4 +37,15 @@ https://www.scratchapixel.com/lessons/3d-basic-rendering/ray-tracing-generating-
 现象：
 
 - 光线方向没有归一化的情况下，前面的球有黑边
-- 
+- 阴影中有个别蓝点，这个地方的坐标是最大的负值浮点数，把判断条件改成1-u-v>=–FLT_EPSILON就没了
+  - VS中 `FLT_EPSILON`
+  - Linux上 `__FLT_EPSILON__`
+  - C++11 `std::numeric_limits<float>::epsilon()`
+- 没做b2的大于0判断，地面扩展到屏幕最下面了
+
+## 提交前
+
+虚拟机运行检查
+
+删除无用文件，提交图片
+

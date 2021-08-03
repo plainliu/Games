@@ -233,8 +233,12 @@ inline Intersection Triangle::getIntersection(Ray ray)
 
     // TODO find ray triangle intersection
 
-
-
+    if ( t_tmp > 0.0f )
+    {
+        inter.distance = t_tmp;
+        inter.coords.x = u;
+        inter.coords.y = v;
+    }
 
     return inter;
 }

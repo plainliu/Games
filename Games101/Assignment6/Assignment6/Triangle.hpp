@@ -238,6 +238,9 @@ inline Intersection Triangle::getIntersection(Ray ray)
         inter.distance = t_tmp;
         inter.coords.x = u;
         inter.coords.y = v;
+        inter.happened = true;
+        inter.obj = this;
+        inter.m = m;
     }
 
     return inter;

@@ -70,6 +70,11 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         hitObject->getSurfaceProperties(hitPoint, ray.direction, index, uv, N, st);
 //        Vector3f tmp = hitPoint;
         switch (m->getType()) {
+            case NORMAL:
+            {
+                hitColor = (N + 1.0f) * 0.5f;
+                break;
+            }
             case REFLECTION_AND_REFRACTION:
             {
                 Vector3f reflectionDirection = normalize(reflect(ray.direction, N));

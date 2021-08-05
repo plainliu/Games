@@ -116,7 +116,7 @@ inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
     rangemin = std::max(rangemin, dirIsNeg[1] ? tminy : tmaxy), rangemax = std::min(rangemax, dirIsNeg[1] ? tmaxy : tminy);
     rangemin = std::max(rangemin, dirIsNeg[2] ? tminz : tmaxz), rangemax = std::min(rangemax, dirIsNeg[2] ? tmaxz : tminz);
 
-    if (rangemin < 0 || rangemin > rangemax)
+    if (rangemin < 0.0f || rangemin > rangemax)
         return false;
 
     return true;

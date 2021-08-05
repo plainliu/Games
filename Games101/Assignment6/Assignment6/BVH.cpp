@@ -113,10 +113,13 @@ Intersection BVHAccel::getIntersection(BVHBuildNode* node, const Ray& ray) const
        return node->object->getIntersection( ray );
 
     Intersection left = getIntersection( node->left, ray );
-    if ( left.happened ) return left;
-
     Intersection right = getIntersection( node->right, ray );
-    if ( right.happened ) return right;
 
-    return Intersection( );
+    if ( left.distance && right.happened && right.distance <= left.distance )
+        return right;
+
+    if ( left.happened )
+        return left;
+
+    return right;
 }

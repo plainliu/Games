@@ -75,12 +75,79 @@ BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
             break;
         }
 
-        auto beginning = objects.begin();
-        auto middling = objects.begin() + (objects.size() / 2);
-        auto ending = objects.end();
+        auto beginning = objects.begin( );
+        auto ending = objects.end( );
+        std::vector<Object*>::iterator middling = objects.begin( );
 
-        auto leftshapes = std::vector<Object*>(beginning, middling);
-        auto rightshapes = std::vector<Object*>(middling, ending);
+        std::vector<Object*> leftshapes;
+        std::vector<Object*> rightshapes;
+
+        if ( splitMethod == SplitMethod::NAIVE || splitMethod == SplitMethod::SAH && objects.size( ) <= 4 )
+        {
+            middling += ( objects.size( ) / 2 );
+
+            leftshapes = std::vector<Object*>( beginning, middling );
+            rightshapes = std::vector<Object*>( middling, ending );
+        }
+        else if ( splitMethod == SplitMethod::SAH )
+        {
+            constexpr int nBuckets = 12;
+            struct BucketInfo {
+                int count = 0;
+                Bounds3 bounds;
+            };
+            BucketInfo buckets[nBuckets];
+
+            for ( auto obj : objects ) {
+                const Vector3f centroid = centroidBounds.Offset( obj->getBounds( ).Centroid( ) );
+                int b = nBuckets * centroid[dim];
+                if ( b == nBuckets ) b = nBuckets - 1;
+                buckets[b].count++;
+                buckets[b].bounds = Union( buckets[b].bounds, obj->getBounds( ) );
+            }
+
+            float cost[nBuckets - 1];
+            for ( int i = 0; i < nBuckets - 1; ++i ) {
+                Bounds3 b0, b1;
+                int count0 = 0, count1 = 0;
+
+                for ( int j = 0; j <= i; ++j ) {
+                    b0 = Union( b0, buckets[j].bounds );
+                    count0 += buckets[j].count;
+                }
+                for ( int j = i + 1; j < nBuckets; ++j ) {
+                    b1 = Union( b1, buckets[j].bounds );
+                    count1 += buckets[j].count;
+                }
+                cost[i] = 0.125f + ( count0 * b0.SurfaceArea( ) +
+                    count1 * b1.SurfaceArea( ) ) / bounds.SurfaceArea( );
+            }
+
+            float minCost = cost[0];
+            int minCostSplitBucket = 0;
+            for ( int i = 1; i < nBuckets - 1; ++i ) {
+                if ( cost[i] < minCost ) {
+                    minCost = cost[i];
+                    minCostSplitBucket = i;
+                }
+            }
+
+            for ( auto obj : objects ) {
+                const Vector3f centroid = centroidBounds.Offset( obj->getBounds( ).Centroid( ) );
+                int b = nBuckets * centroid[dim];
+                if ( b == nBuckets ) b = nBuckets - 1;
+                if ( b <= minCostSplitBucket )
+                    middling++;
+            }
+        }
+        else
+        {
+            std::cout << "[ERR] Invalid SplitMethod: " << (int)splitMethod << std::endl;
+            assert( false );
+        }
+
+        leftshapes = std::vector<Object*>(beginning, middling);
+        rightshapes = std::vector<Object*>(middling, ending);
 
         assert(objects.size() == (leftshapes.size() + rightshapes.size()));
 

@@ -2,6 +2,8 @@
 
 # 作业6
 
+## 基础部分
+
 问题：
 
 比pdf的兔子暗，而且在三角形顶点附近有黑色的块
@@ -87,4 +89,41 @@
 7. 先只保留第二个，断点错误的着色点（isShadow==true），看上下文信息。着色点视线的交点信息中，交点坐标z是0，麻了，返回交点信息的时候xy返回成了uv，没有插值坐标。
 
 8. 解决
+
+## Surface Area Heuristic
+
+参考资料：
+
+pdf链接：http://15462.courses.cs.cmu.edu/fall2015/lecture/acceleration/slide_024
+
+pbrt 4.3.2：https://pbr-book.org/3ed-2018/Primitives_and_Intersection_Acceleration/Bounding_Volume_Hierarchies#TheSurfaceAreaHeuristic
+
+知乎：https://zhuanlan.zhihu.com/p/50720158
+
+SAH回答怎样构造更好的BVH树
+
+贪心算法
+
+对某个node内部分成两个子node
+
+- 先考虑对某个node不分组，逐个查询是否相交，最差的情况，BVH是要把他们分成两组A和B
+
+- SAH是用启发式的思想来实现AB的分组尽可能实现最终查询最优，拆分后求交代价
+  $$
+  c(A, B) = p(A) sum ti + p(B) sum tj + t_{trav}
+  $$
+  `sum ti`分开后A内部查询所有节点的时间，ti假设为1
+  $$
+  c(A, B) = p(A) a + p(B) b + t_{trav}
+  $$
+
+- 用表面积估计击中包围盒的概率
+  $$
+  c(A, B) = p(A) a + p(B) b + t_{trav}\\
+  = S(A) / S(C) * a + S(B) / S(C) * b + t_{trav}
+  $$
+
+- 实际应用：C的长轴方向划分“桶”，每个内部图元的质心分别落入不同的桶中；然后每个桶求包围盒及内部的图元数量，计算每种桶之间的划分使得c(A, B)最小。特殊情况，质心重叠，无法分辨，所有的放入一个叶子，或者直接等量分给两个子节点。
+
+
 

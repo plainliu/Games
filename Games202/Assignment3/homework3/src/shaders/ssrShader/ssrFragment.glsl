@@ -147,7 +147,7 @@ vec3 EvalDirectionalLight(vec2 uv) {
 bool RayMarch(vec3 ori, vec3 dir, out vec3 hitPos) {
   float marchstep = 0.05;
   dir = normalize(dir);
-  for (int i = 1; i < 999; ++i) {
+  for (int i = 1; i < 500; ++i) {
     vec3 curpos = ori + dir * marchstep * float(i);
     vec2 uv = GetScreenCoordinate(curpos);
     if (uv.x < 0.0 || uv.y < 0.0 || uv.x > 1.0 || uv.y > 1.0)
@@ -158,15 +158,13 @@ bool RayMarch(vec3 ori, vec3 dir, out vec3 hitPos) {
     if (curdep < sendep)
       continue;
 
-    // first march
-    if (i == 1)
+    // hit sen from behind the hitpos
+    vec3 hitsenpos = GetGBufferPosWorld(uv);
+    vec3 n = normalize(GetGBufferNormalWorld(uv));
+    if (dot(n, hitsenpos - ori) >= 0.0)
       return false;
 
-    // at the large gap in scene surface
-    if (curdep - sendep > marchstep)
-      return false;
-
-    hitPos.xyz = curpos;
+    hitPos.xyz = hitsenpos;
     return true;
   }
   return false;
@@ -180,7 +178,8 @@ void main() {
   vec2 uv = GetScreenCoordinate(vPosWorld.xyz);
   vec3 L = vec3(0.0);
   L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) * EvalDirectionalLight(uv);
-  // vec3 color = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
+  // vec3 lcolor = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
+  // gl_FragColor = vec4(vec3(lcolor.rgb), 1.0);
   // return;
 
   vec3 n = normalize(GetGBufferNormalWorld(uv));
@@ -190,14 +189,9 @@ void main() {
 
   // Get wi
   vec3 wo = normalize(uCameraPos - vPosWorld.xyz);
-  float cosin = dot(n, wo);
-  vec3 wi = n * 2.0 * cosin - wo;
+  vec3 wi = normalize(n) * 2.0 * dot(normalize(n), wo) - wo;
 
-  // Test: wi dir
-  // vec3 wo2 = normalize(n) * 2.0 * cosin - wi;
-  // L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, wo2, uv) * EvalDirectionalLight(uv);
-  // vec3 wi_up = vec3(-wo.x, wo.y, -wo.z); // assume n is (0, 1, 0)
-  // gl_FragColor = vec4(wo, 1.0);
+  // gl_FragColor = vec4(wi, 1.0);
   // return;
 
   // mirror reflection

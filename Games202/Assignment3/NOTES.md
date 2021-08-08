@@ -121,5 +121,37 @@ raymarching中
 
 
 
-现在做出来，看洞穴的效果，要比pdf的暗
+现在做出来，看洞穴的效果，要比pdf的暗【TODO】
+
+
+
+关于屏幕空间的问题：
+
+- 缺少背面信息，ray tracing的时候从背面trace到了远处的点，如图，导致阴影中采样到了不正确的颜色
+
+  按照图中方式trace，trace起始点A到画红圈的位置O后发现当前trace节点D和屏幕空间的点S对比，是小的，所以返回了O位置的颜色
+
+- 解决方案
+
+  - 简单估计，如果depth的差距大于一定值，则认为不相交。比如利用O位置有个“错开”的gap，这种状态下大多数情况是当前trace节点D和屏幕空间的点S相比，深度差异大。
+
+    ```glsl
+    if (curdep - sendep >= marchstep * 2.0)
+        return false;
+    ```
+
+    
+
+  - 实际来说，最终采样的屏幕空间黄色点S“**要能被起始点A看见**”，计算trace方向与O点的法线之间的夹角。
+
+    ```glsl
+    vec3 hitsenpos = GetGBufferPosWorld(uv);
+    vec3 n = normalize(GetGBufferNormalWorld(uv));
+    if (dot(n, hitsenpos - ori) >= 0.0)
+        return false;
+    ```
+
+    
+
+![image-20210808185030904](C:\liujuanjuan\github-plainliu\Games\Games202\Assignment3\NOTES.assets\image-20210808185030904.png)
 

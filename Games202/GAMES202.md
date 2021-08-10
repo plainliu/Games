@@ -846,7 +846,7 @@ RSM对于手电筒来说，效果很好
 
 图像空间的方法
 
-# P8 Real-time Global Illumination
+# P8 Real-time Global Illumination(screen space)
 
 ## LPV (Light Propagation Volumes)
 
@@ -970,7 +970,7 @@ SSAO是没法线的情况下做，false occusion？
 
 有限的物体范围
 
-# P9 Real-time Global Illumination
+# P9 Real-time Global Illumination(screen space cont.)
 
 ## SSDO (Screen Space Directional Occlusion)
 
@@ -986,7 +986,9 @@ AO中假设间接光照来自非常远的地方，DO假设来自很近的地方
 
 ## SSR (Screen Space Reflection)
 
-Retracing
+28min
+
+Raytracing
 
 屏幕空间上做光线追踪
 
@@ -1011,9 +1013,19 @@ task
 - 加速查找
 - 从0层没有交点，找level1（迈大步子）走一步没有交点，找level2……如果找到了交点，再降低细化
 
+```c
+mip = 0;
+while (level > -1)
+    step through current cell;
+    if (above Z plane) ++level;
+    if (below Z plane) --level;
+```
+
+
+
 问题：
 
-- sreen space 缺失信息
+- sreen space 缺失背面信息
 - 超出屏幕后反射被截断（解决：做衰减）
 
 Shading
@@ -1033,29 +1045,48 @@ Shading
 
 PBR和PBR材质
 
+- PBR：基于物理的渲染（材质、光线、摄像机……）
+- PBR材质
+
 实时渲染中的PB不是真正的PB
+
+- 材质少，质量差，做了简化，不是基于物理的
 
 PBR材质
 
 - surfaces 表面
 
   - 微表面模型
-  - Disney（非PBR）
+  - Disney 渲染器HYPERION（非PBR，基于艺术的，不是基于物理的）
 
 - volumes 体积
 
   光线作用一次和多次分离的方法（云、头发等）
+  
+  single、multiple scattering
+  
+- 实时渲染中相对离线hacks
 
-保证速度的前提下，把离线的效果带到实时
+- 保证速度的前提下，把离线的效果带到实时
 
 ## 微表面的BRDF
 
-菲涅尔项：有多少比率的能量被反射掉
+![image-20210810203821542](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210810203821542.png)
 
-MDF：法线分布
+F菲涅尔项：有多少比率的能量被反射掉
 
-- 分布相近：glossy
-- 复杂：diffuse
+- 观察角度，入射方向和平面法线垂直，反射最多（参照河边看倒影）
+
+- 估计
+
+  ![image-20210810204608233](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210810204608233.png)
+
+G：Shadowing masking
+
+D微表面法线的分布
+
+- 分布相近，glossy
+- 分布变化剧烈，diffuse（表面沟壑深）
 
 
 
@@ -1063,75 +1094,251 @@ NDF(Normal Distribution Function)
 
 - 法线分布（与正态无关）
 - 模型：Beckmann、GGX、Yan…
-
-二维
-
-半球上分布的信息，二维表示：从上往下“拍扁”
-
-因变量：各个方向
+- 二维的，分布在**圆上**，中心大，往外面衰减【min25】
+- 半球上分布的信息（法线向上），二维表示：从上往下“拍扁”
 
 Beckmann：类似高斯【疑】
 
-（各向同性）
+- alpha： lob的大小，也就是粗糙程度
+- theta：半程向量和n的夹角（各向同性）
+- 坡度空间：tan保证微表面的方向不会向下
+- 归一化的性质
 
-坡度空间：保证微表面的方向不会向下
+GGX（TR）（作业）：也类似高斯
 
-GGX（TR）（作业）：
+- 相比Beckmann，多“长尾巴”（光晕）
+- 衰减到一定程度后，衰减速度变慢，更自然的高光和diffuse效果
 
-- 相比Beckmann，多“长尾巴”
-- 衰减速度慢，更自然的高光和diffuse效果
+GGX拓展（Generalized TR）GTR
 
-Generalized TR
-
-
-
-Shadowing-Masking Term
-
-grazing angle微表面的自遮挡问题
-
-让grazing angle变暗
+- 更长的尾巴
+- gama = 2，约等于GGX，越大尾巴越小
 
 
 
-问题：（白炉测试）
+Shadowing-Masking Term（Geometry term）
 
-越粗糙，越暗（能量丢失）
+- 解决微表面的自遮挡问题
+- grazing angle的子遮挡问题最严重
+- 概念：shadowing-light，masking-eye
+- 目的是让grazing angle变暗，自遮挡严重，越暗。
+- 问题：边缘上，球的外圈菲涅尔项全反射，太亮
+- Smith：分开考虑shadowing和masking
+- m：半程向量
+
+
+
+考虑以上三个项之后，仍有问题：
+
+- 越粗糙，越暗（能量丢失）
+- 空的背景，测试亮暗（白炉测试）
+- 原因：越粗糙，微表面沟壑越深，多次bounce弹射的能量越多，所以只通过一次弹射模拟，会导致能量丢失
+
+
 
 Kulla-Conty近似
 
-没有颜色 1-Eu
+- 通过经验性的方式补全丢失的能量
 
-有颜色 平均Frensel
+- 有多少能量丢失？
+
+- 看多少能量能离开微表面【1h2min】，对BRDF、cos和lighting积分。所有的入射光环境光 uniform = 1，f是brdf项。
+
+  球面展开成对theta、ph的积分。对应的立体角是sin theta dtheta dph，令mu = sin theta，原来要积分的cos sin d theta d ph，sin d sin d ph，再替换成mu
+
+  ![image-20210810213322712](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210810213322712.png)
+
+- 被遮挡的损失的能量 1-Eu， 不同的观察方向，积分出来的不一样，和u有关系
+
+- 补上能量 1-Eu，不上一个BRDF项，使得积分出来的能量是1-Eu，考虑对称性，并且简单起见*c*(1 − *E*(*μ**i*))(1 − *E*(*μ**o*))，c为
+
+  ![image-20210810214933924](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210810214933924.png)
+
+- E_avg，预计算，打表。依赖的参数是观测方向u和roughness
+
+- 有颜色的情况，说明本身有颜色的吸收造成的能量损失
+
+  先考虑没有颜色的情况，再考虑吸收的问题
+
+  平均Frensel：不管入射角多大，平均反射多少
+
+  ![image-20210810215929168](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210810215929168.png)
+
+  每次bounce上应该补充的能量，级数相加
+
+  ![image-20210810220120379](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210810220120379.png)
 
 
 
-不要在微表面的BRDF上加diffuse！
+**不要在微表面的BRDF上加diffuse！**
 
-# P10 Real-Time Physically-Based Materials(surface models cont.)
+# P11 Real-Time Physically-Based Materials(surface models cont.)
 
-LTC
+在micro brdf定义好后，如何shading，方法LTC
 
-线性变换的余弦
+## LTC：线性变换的余弦
+
+要做的事情
+
+- 主要针对GGX
+- shading不考虑shadow
+- 微表面模型在多光源情况下的shading结果
+
+做法
+
+- brdf lob是四维的，wi 两维，wo 两维，在固定观察方向后，2维
+- 2D brdf lob => cosin，光源跟着brdf变换
+- 转换的目的，统一不同的brdf的计算，而且转换后有解析解【13min】
+- 具体换元积分【18min】
+
+【疑】
 
 ## Disney principled BRDF
 
-【疑】这里几乎没听懂
+微表面模型的缺点
 
+- 解释不了多层的材质（刷了清漆的桌面）
+- 不好用：PBR物理量对艺术家不友好
 
+Disney principled BRDF
 
-## 作业2
+- 艺术家友好的，不要求物理正确性
 
-C++部分预计算
+- 不是真实的PBR
 
-- CMake + C++17
+- 设计原则
 
-JS部分渲染
+  物理量少
 
+  参数少
 
+  参数范围0-1
 
-# C++ Windows 编译
+  所有的组合在一起得到可靠的结果
 
-cmake：官网下载msi安装程序，按照步骤安装，并添加path到系统目录
+- 拟合的复杂公式，有开放源代码
 
-编译器
+- 次表面反射：比diffuse更平的效果
 
+好处
+
+- 方便使用
+- 简单模型描述更多的材质
+- 不是基于物理的，还是叫PBR，学术界和工业界
+- 巨大的参数空间，表示能力强
+
+坏处
+
+- 参数空间大，难以训练，容易出现冗余
+
+游戏引擎里不用Disney
+
+## 非真实感渲染 Non-Photorealistic Rendering (NPR)
+
+实时渲染中
+
+- 快速
+- 可靠
+- 风格化
+
+真实感渲染
+
+- 像照片
+
+非真实感
+
+- 艺术表现
+
+- 从真实感出发
+
+- 应用：艺术、可视化、结构、教育、娱乐
+
+- 应用：游戏
+
+  阴影、描边
+
+从真实感渲染+艺术效果=>渲染中应该如何做
+
+Outline Rendering（B边界、C折痕、M材质边界、S轮廓-多个边共享）
+
+- view normal 垂直，边界，假设降低90度，描边变宽：描边不一样粗
+- 模型外侧画一个大一圈的模型：背面的三角形扩大一圈
+- 在图像上做处理：Sobel detector，图像上做filter《数字图像处理》，锐化类似
+- 在深度+normal判断边界
+
+Color blocks
+
+- 色块 阈值化，二值化
+- 阈值化，多值化，对于某个范围对应一个颜色
+
+Strokes Surface Stylization
+
+- 素描是甚么：明暗程度决定素描密度
+- 设计不同密度的纹理，即明暗
+- 远处也达到相同的明暗：做mipmap
+
+NPR：
+
+- 重点是从艺术效果到渲染的翻译过程
+- NPR的过程做if else
+- NPR的好坏主要是NPR之前真实感的渲染的好坏
+
+# P12 Real-Time Ray Tracing 1
+
+毛发：RTE、BSSRDF……离线渲染
+
+离线渲染课
+
+- 复杂的光线传播的方法
+- 复杂的材质：散射介质
+
+UE5
+
+- Nanite
+- Lumen
+
+## RTRT
+
+硬件：NVIDIA RTX
+
+应用广泛
+
+RTX
+
+- 星球大战
+- 保时捷车
+- ……
+
+RTX actually do
+
+- 软阴影
+- 反射
+- 环境光遮蔽
+
+硬件：GPU光线和场景的求交，每秒10g光线
+
+**1 sample per pixel** = 1 SPP，一个光路的样本
+
+RTRT最关键的技术：降噪
+
+降噪目的（1 SPP下）
+
+- 高质量（不糊、没有明显bug）
+- 速度（几ms）
+
+现有技术不可能
+
+- Sheared filtering series
+- 离线的方法
+- 深度学习
+
+RTX的optix 没有做时间上的filtering
+
+工业界的idea
+
+- **Temporal** 利用时间，递归
+- 假设前一帧已经滤波
+- 用motion vectors找到上一帧中的位置
+- 相当于增加了SPP
+
+G-Buffer

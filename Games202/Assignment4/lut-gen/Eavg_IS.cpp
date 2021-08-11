@@ -90,7 +90,9 @@ int main() {
         // | 
         // | rough（i）
         // Flip it, if you want the data written to the texture
-        uint8_t data[resolution * resolution * 3];
+        //uint8_t data[resolution * resolution * 3];
+        std::vector<uint8_t> buffer( resolution * resolution * 3 );
+        uint8_t* data = buffer.data( );
         float step = 1.0 / resolution;
         Vec3f Eavg = Vec3f(0.0);
 		for (int i = 0; i < resolution; i++) 

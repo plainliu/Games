@@ -111,15 +111,10 @@ inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
     tmaxy = tmp.y * invDir.y;
     tmaxz = tmp.z * invDir.z;
 
-    float rangemin, rangemax;
-    rangemin = dirIsNeg[0] ? tminx : tmaxx, rangemax = dirIsNeg[0] ? tmaxx : tminx;
-    rangemin = std::max(rangemin, dirIsNeg[1] ? tminy : tmaxy), rangemax = std::min(rangemax, dirIsNeg[1] ? tmaxy : tminy);
-    rangemin = std::max(rangemin, dirIsNeg[2] ? tminz : tmaxz), rangemax = std::min(rangemax, dirIsNeg[2] ? tmaxz : tminz);
+    float t_enter = std::max( std::max( dirIsNeg[0] ? tminx : tmaxx, dirIsNeg[1] ? tminy : tmaxy ), dirIsNeg[2] ? tminz : tmaxz);
+    float t_exit = std::min( std::min( dirIsNeg[0] ? tmaxx : tminx, dirIsNeg[1] ? tmaxy : tminy ), dirIsNeg[2] ? tmaxz : tminz);
 
-    if (rangemin < 0.0f || rangemin > rangemax)
-        return false;
-
-    return true;
+    return ( t_enter < t_exit && t_exit > 0.0f ) ? true : false;
 }
 
 inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)

@@ -1142,7 +1142,7 @@ Kulla-Conty近似
 
 - 有多少能量丢失？
 
-- 看多少能量能离开微表面【1h2min】，对BRDF、cos和lighting积分。所有的入射光环境光 uniform = 1，f是brdf项。
+- 看多少能量能离开微表面【1h2min】，对BRDF、cos和lighting积分。所有的入射光 radiance 1，f是brdf项。
 
   球面展开成对theta、ph的积分。对应的立体角是sin theta dtheta dph，令mu = sin theta，原来要积分的cos sin d theta d ph，sin d sin d ph，再替换成mu
 
@@ -1342,3 +1342,333 @@ RTX的optix 没有做时间上的filtering
 - 相当于增加了SPP
 
 G-Buffer
+
+- 记录屏幕空间的一组信息（类似深度图的生成）：世界坐标中的xyz、法线……
+- for free：轻量级
+
+Temporal-back projection
+
+- 找像素对应的内容，上一帧在哪里
+- 当前点的世界坐标
+  - G-Buffer中读取（在第一趟 primer ray 用光栅化做的时候顺便得到的）
+  - MVPE逆变换
+- 上一帧世界坐标在哪里
+  - 逆变换
+- 从世界坐标系计算上一帧的屏幕坐标
+  - 利用上一帧的MVPE计算
+- 计算机视觉中-光流：只基于内容，但这里需要准确的的motion vector
+
+两帧结合
+
+1. 当前帧做自己的降噪
+
+2. 时间上做降噪
+
+   两帧之间做线性插值 alpha = 0.1-0.2，当前帧占用比例小
+
+降噪前图片噪点大，看着暗
+
+- 能力守恒的，看着暗是因为原大于1的点被clamp掉
+- HDR显示器显示看不会这么暗
+
+Temporal 问题
+
+- 上一帧不能用的情况
+
+  - 切换场景
+
+    快速变化的光源
+
+    场景中切换镜头
+
+  - 屏幕空间的信息
+
+    倒退的场景
+
+    上一帧不在屏幕空间
+
+  - disocclusion
+
+    被遮挡的区域突然出现，屏幕空间没有存储背后的信息（拖尾）
+
+- 处理
+
+  - Clamping
+
+    让上一帧clamp
+
+  - Detection
+
+    检测用不用上一帧，利用object ID
+
+    - 调整alpha
+
+- 其他问题
+
+  shading问题，motion vector = 0，只移动光源
+
+  - 阴影拖尾
+
+  反射平面不动，移动被反射的物体
+
+  - 反射效果滞后
+
+Temporal 加速和TAA是相同的思路
+
+学术界降低Temporal Failure的影响
+
+- EG paper
+
+# P13 Real-Time Ray Tracing 2
+
+当前帧的降噪（空间上的滤波）：边缘领域（计算机视觉、图形学……）、双边滤波
+
+## Filtering
+
+低通滤波
+
+高斯滤波器
+
+- 取周围所有点的贡献，再除以权重和
+- 理论上取周围很大范围的点，实际取3 sigma
+- 权重和为0，返回0
+
+Bilateral Filtering
+
+- 高斯滤波对图像每个地方糊掉，整个图模糊
+- 为了保留边界（高频信息），使用双边滤波
+- 边界：变化剧烈
+- 处理：**像素差异足够大**的时候，贡献变小（颜色距离）
+- 问题：怎么区分是噪声还是边界svgf
+
+Joint/Cross Bilateral Filtering 联合双边滤波
+
+- 判断标准：位置距离+颜色距离
+
+- 非常适合做蒙特卡洛的双边滤波
+
+- 利用：
+
+  G-Buffer
+
+  不止高斯滤波
+
+- 怎样做
+
+  1. 像素之间的绝对距离
+  2. 颜色距离
+  3. 深度差异，差异越大，贡献越小
+  4. 法线差异，差异越大，贡献越小
+
+  这几个贡献是乘起来的，几个滤波相乘，各自的参数调节
+
+Implementing Large Filters
+
+- 滤波核大了后，计算缓慢
+
+- 解决思路：
+
+  1. Separate Passes
+
+     先水平filter一遍，再竖直filter一遍
+
+     n方--2n
+
+     因为2维高斯在数学上本来就是分开定义的
+
+     高斯滤波可以这么做，联合双边滤波理论上不可以，但实际上对滤波核不特别大的情况，32*32的情况下硬拆，几乎没有art
+
+  2. Progressively Growing Sizes
+
+     逐步增大的filter
+
+     a-trous wavelet
+
+     - 每一次都是5*5的大小
+     - 第二趟的5个之间有间隔，i趟间隔是2^i
+     - 64^2 = 5^2 * 5，做五层5*5
+
+     为什么【1h5min】要分层向上，为啥更高层上间隔更大
+
+Outlier Removel 
+
+- 问题：原来超级亮的点，被扩散到周围
+
+- 处理：滤波之前就给过滤掉（有能量不守恒的问题，但暂不考虑）
+
+- 检测outlier：7*7
+
+  算均值和方差，超过一定范围
+
+- removal
+
+  做法：clamp到这个范围
+
+Temporal Clamping
+
+- clamp上一帧
+
+# P14 A Glimpse of Industrial Solutions
+
+## RTRT 降噪解决方案
+
+### SVGF（Spatiotemporal Variance-Guided Filtering）
+
+深度学习
+
+深度的梯度
+
+- 沿着这个面法线的方向上，深度差异，而不是屏幕空间的深度差异
+
+  ![image-20210814222312086](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210814222312086.png)
+
+- 法线（不应用法线贴图）
+
+  ![image-20210814222331719](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210814222331719.png)
+
+- 亮度差异
+
+  ![image-20210814222408844](C:\liujuanjuan\github-plainliu\Games\Games202\GAMES202.assets\image-20210814222408844.png)
+
+改进 ASVGF
+
+### RAE
+
+Recurrent denoising AutoEncoder
+
+神经网络 AutoEncoder/U-Net structure
+
+- “漏斗形”
+
+对比
+
+## 工业界解决方案
+
+### TAA（Temporal Anti-Aliasing）
+
+反走样
+
+Temporal 反走样
+
+MSAA和SSAA
+
+- SSAA：扩大分辨率，计算，再缩小
+
+- MSAA：一个像素内几个感知点，对于同一个primitive，所有感知点，只做一次shading。维护深度和颜色的表。
+
+  临近的像素复用
+
+基于图像的反走样
+
+- SMAA（FXAA-MLAA-SMAA）
+- “矢量化”
+
+G-Buffer一定不做反走样
+
+### Temporal Super Resolution
+
+增加最后图像的分辨率
+
+DLSS
+
+低分辨率变成高分辨率
+
+- DLSS 1.0：神经网络训练
+
+- DLSS 2.0：应用上一帧的信息，核心思路TAA
+
+  问题：Temporal Failure，不能再用clamping
+
+### 延迟渲染
+
+深度测试不通过的像素不着色
+
+光栅化两次
+
+1. 得到深度缓存
+2. 所有场景做一次光栅化，只做通过深度测试通过的像素
+
+early-Z
+
+问题：
+
+- 不能做aa
+- 但可以做taa
+
+### Tiled Shading
+
+降低shading中光源的信息
+
+继续优化 Clustered Shading，深度上做切分
+
+避免没有意义的shading
+
+### Level of Detail Solutions
+
+LOD
+
+cascaded
+
+1. shadowMap：距离不一样的地方用不一样大小的shadowMap
+2. LPV
+
+最大的问题：
+
+- 层级之间的转换：插值
+
+模型的层级，geometric LoD
+
+- 转换中间平滑过渡：用TAA
+- UE5 Nanite（硬件软光栅）
+
+FYI
+
+### Global Illumination Solutions
+
+各种方案不能完美，除了RTRT，但慢
+
+多种方法结合
+
+Lumen的实现
+
+## 总结
+
+什么是有趣的
+
+- 更多思考
+
+工程能力
+
+其他技术
+
+- SDF纹理
+- 透明物体
+- 特效
+- 后期处理
+- 随机数种子、蓝噪声
+- 盯着的位置分配高算力
+- Probe
+- ReSTIR, Neural Radiance Caching, etc
+- Many-light theory and light cuts
+- Participating media, SSSSS
+- Hair appearance
+- ……
+
+Games203视觉
+
+- 3D重建、算法
+- 3D信息的表示
+- 3D识别
+
+Games2XX离线渲染
+
+- 采样和光线传播理论
+- Appearance Modeling
+- State of the Art Research Topics
+
+GAMES
+
+# 资料
+
+https://ciechanow.ski/lights-and-shadows/
+

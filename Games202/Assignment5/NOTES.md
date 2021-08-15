@@ -20,3 +20,11 @@ ffmpeg工具：http://ffmpeg.org/download.html
 
 # 作业
 
+## 当前帧的降噪
+
+1. 高斯模糊
+
+   整个图像模糊
+
+2. 高斯+颜色距离
+

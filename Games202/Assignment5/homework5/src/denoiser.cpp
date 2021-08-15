@@ -46,7 +46,34 @@ Buffer2D<Float3> Denoiser::Filter(const FrameInfo &frameInfo) {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             // TODO: Joint bilateral filter
-            filteredImage(x, y) = frameInfo.m_beauty(x, y);
+            //filteredImage(x, y) = frameInfo.m_beauty(x, y);
+
+            float sumWeight = 0;
+            Float3 sumColor(0);
+            for (int i = std::max(0, x - kernelRadius / 2); i < std::min(x + kernelRadius / 2, width); i++) {
+                for (int j = std::max(0, y - kernelRadius / 2); j < std::min(y + kernelRadius / 2, height); j++) {
+                    float w_g =
+                        (Sqr(i - x) + Sqr(j - y)) /
+                        (2.0f * Sqr(m_sigmaCoord));
+                    float w_color =
+                        SqrLength(frameInfo.m_beauty(i, j) - frameInfo.m_beauty(x, y)) /
+                        (2.0f * Sqr(m_sigmaColor));
+                    float w_normal =
+                        //Sqr(SafeAcos(Dot(frameInfo.m_normal(i, j), frameInfo.m_normal(x, y)))) /
+                        (SafeAcos(Dot(frameInfo.m_normal(i, j), frameInfo.m_normal(x, y)))) /
+                        (2.0f * Sqr(m_sigmaNormal));
+                    float poslen = Length(frameInfo.m_position(i, j) - frameInfo.m_position(x, y));
+                    float w_plane = poslen == 0.0f ? 1.0f :
+                        Sqr(Dot(frameInfo.m_normal(x, y), frameInfo.m_position(i, j) - frameInfo.m_position(x, y))) / poslen /
+                        (2.0f * Sqr(m_sigmaPlane));
+
+                    float weight = exp((w_g + w_color + w_normal + w_plane) * -1);
+                    sumWeight += weight;
+                    sumColor += frameInfo.m_beauty(i, j) * weight;
+                }
+            }
+            sumColor /= sumWeight;
+            filteredImage(x, y) = sumColor;
         }
     }
     return filteredImage;

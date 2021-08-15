@@ -58,13 +58,15 @@ Buffer2D<Float3> Denoiser::Filter(const FrameInfo &frameInfo) {
                     float w_color =
                         SqrLength(frameInfo.m_beauty(i, j) - frameInfo.m_beauty(x, y)) /
                         (2.0f * Sqr(m_sigmaColor));
+                    float dotnormal = Dot(frameInfo.m_normal(i, j), frameInfo.m_normal(x, y));
+                    if (dotnormal == 0.0f) continue; // one of normal is [0, 0, 0] or two normals are vertical
                     float w_normal =
-                        //Sqr(SafeAcos(Dot(frameInfo.m_normal(i, j), frameInfo.m_normal(x, y)))) /
-                        (SafeAcos(Dot(frameInfo.m_normal(i, j), frameInfo.m_normal(x, y)))) /
+                        Sqr(SafeAcos(dotnormal)) /
                         (2.0f * Sqr(m_sigmaNormal));
-                    float poslen = Length(frameInfo.m_position(i, j) - frameInfo.m_position(x, y));
-                    float w_plane = poslen == 0.0f ? 1.0f :
-                        Sqr(Dot(frameInfo.m_normal(x, y), frameInfo.m_position(i, j) - frameInfo.m_position(x, y))) / poslen /
+                    float sqrposdis = SqrDistance(frameInfo.m_position(i, j), frameInfo.m_position(x, y));
+                    if (sqrposdis == 0.0f) continue; // two positions are parallel
+                    float w_plane =
+                        Sqr(Dot(frameInfo.m_normal(x, y), frameInfo.m_position(i, j) - frameInfo.m_position(x, y))) / sqrposdis /
                         (2.0f * Sqr(m_sigmaPlane));
 
                     float weight = exp((w_g + w_color + w_normal + w_plane) * -1);
@@ -72,7 +74,7 @@ Buffer2D<Float3> Denoiser::Filter(const FrameInfo &frameInfo) {
                     sumColor += frameInfo.m_beauty(i, j) * weight;
                 }
             }
-            sumColor /= sumWeight;
+            if (sumWeight > 0.0f) sumColor /= sumWeight;
             filteredImage(x, y) = sumColor;
         }
     }

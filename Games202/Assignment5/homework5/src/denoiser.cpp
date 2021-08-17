@@ -29,7 +29,7 @@ void Denoiser::Reprojection(const FrameInfo &frameInfo) {
                 preScreenPosition.y >= 0 && preScreenPosition.y < height &&
                 preObjID == objID) {
                 m_valid(x, y) = true;
-                m_misc(x, y) = m_preFrameInfo.m_beauty(x, y);
+                m_misc(x, y) = m_accColor(preScreenPosition.x, preScreenPosition.y);
             } else {
                 m_valid(x, y) = false;
                 m_misc(x, y) = Float3(0.f);
@@ -47,9 +47,28 @@ void Denoiser::TemporalAccumulation(const Buffer2D<Float3> &curFilteredColor) {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             // TODO: Temporal clamp
+            int count = 0;
+            Float3 sumColor(0);
+            Float3 sumSqrColor(0);
+            for (int i = std::max(0, x - kernelRadius); i <= std::min(x + kernelRadius, width - 1); i++) {
+                for (int j = std::max(0, y - kernelRadius); j <= std::min(y + kernelRadius, height - 1); j++) {
+                    if (m_valid(i, j) == false)
+                        continue;
+
+                    sumColor += curFilteredColor(i, j);
+                    sumSqrColor += Sqr(curFilteredColor(i, j));
+                    count ++;
+                }
+            }
             Float3 color = m_accColor(x, y);
+            if (count > 0) {
+                sumColor /= count;
+                sumSqrColor /= count;
+                Float3 sigma = sumSqrColor - Sqr(sumColor);
+                Clamp(color, sumColor - sigma * m_colorBoxK, sumColor + sigma * m_colorBoxK);
+            }
             // TODO: Exponential moving average
-            float alpha = 1.0f;
+            float alpha = m_valid(x, y) ? m_alpha : 1.0f;
             m_misc(x, y) = Lerp(color, curFilteredColor(x, y), alpha);
         }
     }
@@ -69,8 +88,8 @@ Buffer2D<Float3> Denoiser::Filter(const FrameInfo &frameInfo) {
 
             float sumWeight = 0;
             Float3 sumColor(0);
-            for (int i = std::max(0, x - kernelRadius / 2); i < std::min(x + kernelRadius / 2, width); i++) {
-                for (int j = std::max(0, y - kernelRadius / 2); j < std::min(y + kernelRadius / 2, height); j++) {
+            for (int i = std::max(0, x - kernelRadius); i <= std::min(x + kernelRadius, width - 1); i++) {
+                for (int j = std::max(0, y - kernelRadius); j <= std::min(y + kernelRadius, height - 1); j++) {
                     float w_g =
                         (Sqr(i - x) + Sqr(j - y)) /
                         (2.0f * Sqr(m_sigmaCoord));

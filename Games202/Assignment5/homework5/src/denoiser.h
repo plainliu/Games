@@ -28,6 +28,18 @@ class Denoiser {
     void Reprojection(const FrameInfo &frameInfo);
     void TemporalAccumulation(const Buffer2D<Float3> &curFilteredColor);
     Buffer2D<Float3> Filter(const FrameInfo &frameInfo);
+    Float3 NormalLevelFilter(const FrameInfo &frameInfo, const int &width,
+                             const int &height, const int &x, const int &y,
+                             const int &kernelRadius);
+    Float3 ATrousWaveletLevelFilter(const FrameInfo &frameInfo,
+                                    const Buffer2D<Float3> &curFilteredColor,
+                                    const int &width, const int &height, const int &x,
+                                    const int &y, const int &level);
+    Float3 LevelFilter(const FrameInfo &frameInfo,
+                       const Buffer2D<Float3> &curFilteredColor, const int &width,
+                       const int &height, const int &x, const int &y,
+                       const int &level = 0,
+                       const int &kernelRadius = 2);
 
     Buffer2D<Float3> ProcessFrame(const FrameInfo &frameInfo);
 

@@ -50,9 +50,6 @@ void Denoiser::TemporalAccumulation(const Buffer2D<Float3> &curFilteredColor) {
             Float3 sumSqrColor(0);
             for (int i = std::max(0, x - kernelRadius); i <= std::min(x + kernelRadius, width - 1); i++) {
                 for (int j = std::max(0, y - kernelRadius); j <= std::min(y + kernelRadius, height - 1); j++) {
-                    if (m_valid(i, j) == false)
-                        continue;
-
                     sumColor += curFilteredColor(i, j);
                     sumSqrColor += Sqr(curFilteredColor(i, j));
                     count ++;
@@ -63,7 +60,7 @@ void Denoiser::TemporalAccumulation(const Buffer2D<Float3> &curFilteredColor) {
                 sumColor /= count;
                 sumSqrColor /= count;
                 Float3 sigma = sumSqrColor - Sqr(sumColor);
-                Clamp(color, sumColor - sigma * m_colorBoxK, sumColor + sigma * m_colorBoxK);
+                color = Clamp(color, sumColor - sigma * m_colorBoxK, sumColor + sigma * m_colorBoxK);
             }
             // TODO: Exponential moving average
             float alpha = m_valid(x, y) ? m_alpha : 1.0f;
@@ -86,7 +83,7 @@ Buffer2D<Float3> Denoiser::Filter(const FrameInfo &frameInfo) {
 //            // TODO: Joint bilateral filter
 //            // filteredImage(x, y) = frameInfo.m_beauty(x, y);
 //
-//            filteredImage(x, y) = NormalLevelFilter(frameInfo, height, width, x, y, kernelRadius);
+//            filteredImage(x, y) = NormalLevelFilter(frameInfo, width, height, x, y, kernelRadius);
 //        }
 //    }
 
@@ -98,7 +95,7 @@ Buffer2D<Float3> Denoiser::Filter(const FrameInfo &frameInfo) {
 #pragma omp parallel for
         for (int y = 0; y < height; y++) {
             for (int x = 0; x < width; x++) {
-                curFilteredColor(x, y) = ATrousWaveletLevelFilter(frameInfo, filteredImage, height, width, x, y, level);
+                curFilteredColor(x, y) = ATrousWaveletLevelFilter(frameInfo, filteredImage, width, height, x, y, level);
             }
         }
         std::swap(curFilteredColor, filteredImage);
@@ -126,8 +123,8 @@ Float3 Denoiser::LevelFilter(const FrameInfo &frameInfo,
                              const int& level, const int& kernelRadius) {
     int step = pow(2, level);
 
-    float sumWeight = 0;
-    Float3 sumColor(0);
+    float sumWeight = 0.0f;
+    Float3 sumColor(0.0f);
     for (int i = -kernelRadius; i <= kernelRadius; i++) {
         for (int j = -kernelRadius; j <= kernelRadius; j++) {
             int x_ = x + i * step;
@@ -140,22 +137,22 @@ Float3 Denoiser::LevelFilter(const FrameInfo &frameInfo,
             float w_color = SqrLength(curFilteredColor(x_, y_) - curFilteredColor(x, y)) / (2.0f * Sqr(m_sigmaColor));
 
             float dotnormal = Dot(frameInfo.m_normal(x_, y_), frameInfo.m_normal(x, y));
-            // one of normal is [0, 0, 0] or two normals are vertical
-            if (dotnormal == 0.0f)
-                continue;
             float w_normal = Sqr(SafeAcos(dotnormal)) / (2.0f * Sqr(m_sigmaNormal));
 
             float sqrposdis = SqrDistance(frameInfo.m_position(x_, y_), frameInfo.m_position(x, y));
-            if (sqrposdis == 0.0f)
-                continue;
-            float w_plane = Sqr(Dot(frameInfo.m_normal(x, y), frameInfo.m_position(x_, y_) - frameInfo.m_position(x, y)))
+            float w_plane = sqrposdis == 0.0f ? 0.0f :
+                Sqr(Dot(frameInfo.m_normal(x, y), frameInfo.m_position(x_, y_) - frameInfo.m_position(x, y)))
                 / sqrposdis / (2.0f * Sqr(m_sigmaPlane));
 
             float weight = exp((w_gauss + w_color + w_normal + w_plane) * -1);
+            if (weight <= std::numeric_limits<float>::epsilon())
+                continue;
+
             sumWeight += weight;
             sumColor += curFilteredColor(x_, y_) * weight;
         }
     }
+
     if (sumWeight > 0.0f)
         sumColor /= sumWeight;
 
@@ -176,6 +173,7 @@ Buffer2D<Float3> Denoiser::ProcessFrame(const FrameInfo &frameInfo) {
     // Filter current frame
     Buffer2D<Float3> filteredColor;
     filteredColor = Filter(frameInfo);
+    //filteredColor = frameInfo.m_beauty;
 
     // Reproject previous frame color to current
     if (m_useTemportal) {

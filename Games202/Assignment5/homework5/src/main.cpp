@@ -52,14 +52,22 @@ void Denoise(const filesystem::path &inputDir, const filesystem::path &outputDir
 
 int main() {
     // Box
-    #ifdef _MSC_VER
+    #ifdef _MYPC_MSC
+    #ifdef _INPUT_BOX
     filesystem::path inputDir("../../../examples/box/input");
     filesystem::path outputDir("../../../examples/box/output");
+    int frameNum = 20;
     #else
-    filesystem::path inputDir("examples/box/input");
-    filesystem::path outputDir("examples/box/output");
+    filesystem::path inputDir("../../../examples/pink-room/input");
+    filesystem::path outputDir("../../../examples/pink-room/output");
+    int frameNum = 80;
     #endif
 
+    #else
+
+    // Box
+    filesystem::path inputDir("examples/box/input");
+    filesystem::path outputDir("examples/box/output");
     int frameNum = 20;
 
     /*
@@ -68,6 +76,8 @@ int main() {
     filesystem::path outputDir("examples/pink-room/output");
     int frameNum = 80;
     */
+
+    #endif
 
     Denoise(inputDir, outputDir, frameNum);
     return 0;

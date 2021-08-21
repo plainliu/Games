@@ -83,3 +83,77 @@ PDF中写的十分清楚，套公式计算即可。
 
 - box 0-3做4层后，出现明显方格子，条纹；减少到0-2做3层，效果好很多
 
+- box效果可以，但是到pink-room
+
+  单帧降噪，噪声仍十分严重，且
+
+  - filter后缩小看有白块
+  - Wavelet filter后缩小看有**黑块**，放大看是黑色的点阵
+
+  【10倍m_sigmaColor】后，噪声明显减小
+
+  - filter后放大看有个别白点
+
+  - Wavelet filter后，效果比正常filter的边缘地方糊，沙发中间的阴影比较明显
+
+  - 加上投影后，
+
+    - 普通filter，有个别黑点
+    - Wavelet出现了黑色点阵，图片缩小显示黑块【推测是颜色区间相近，outlier？灾难扩散？调节m_colorBoxK】
+
+    ![image-20210819222712525](C:\liujuanjuan\github-plainliu\Games\Games202\Assignment5\NOTES.assets\image-20210819222712525.png)
+
+pick roon与box比较
+
+- 颜色集中在粉色附近，所以需要提高颜色sigma，更细精度地区分颜色，只有在颜色相近程度更高的情况下才有贡献。
+- 几何变复杂，不止正方正球
+
+### 作业问题
+
+问题一
+
+按照作业要求，同时使用objID和Clamping的情况下，效果反而没有只用objID的好
+
+分析：
+
+- 将上一帧的信息Clamping到当前帧（当前帧噪声严重，上一帧视作已经降噪的），与降噪的愿意相背，把降噪了的值拉到了当前帧噪声严重
+- 课程中处理的是拖影问题，用降噪替换拖影
+- 分析的结论：如果用了objID，则不需要clamp，temporal success，信任上一帧，对于failure的情况，使用clamp
+- 如果作业中用clamp，那么增大boxK，降低clamp的影响，从1增加到20，播放视频还是能看到移动的噪声……
+
+问题二
+
+wavelet加速后，不带clamping做对比，效果没有原filter稳定，仍然有噪声
+
+问题三
+
+值是-nan(ind)
+
+![image-20210821085134625](C:\liujuanjuan\github-plainliu\Games\Games202\Assignment5\NOTES.assets\image-20210821085134625.png)
+
+temporal计算后是nan，从计算结果来看，应该在filter阶段就出现nan了，用下面的方式在filter中验证
+
+```c++
+CHECK(sumColor.x == sumColor.x);
+isinf();
+isnan();
+```
+
+加打印发现nan是在level=2的时候出现的，此时
+
+- curFilteredColor(x, y) = [inf]
+- weight = 0
+- w_color = inf
+
+原因：
+
+- 层数为1时（从0开始计数），dotnormal 计算的结果是小于0的，在这种情况下w_normal = 123左右
+- 导致exp算出来是接近0的小数
+- 颜色本身也小，sumColor值小
+- sumColor / sum(exp) 为inf
+- 层2使用层1的结果，sum(inf * #DEN) / #DEN 得到了nan
+
+处理：
+
+判断weight非法值的情况下，不参与计算
+

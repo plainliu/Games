@@ -130,7 +130,7 @@ vec3 EvalDiffuse(vec3 wi, vec3 wo, vec2 uv) {
   if (cosTheta < 0.0)
     return vec3(0.0);
 
-  vec3 L = vec3(1.0 / M_PI) * cosTheta;
+  vec3 L = GetGBufferDiffuse(uv) / M_PI * cosTheta;
   return L;
 }
 
@@ -177,9 +177,14 @@ void main() {
 
   vec2 uv = GetScreenCoordinate(vPosWorld.xyz);
   vec3 L = vec3(0.0);
-  L = GetGBufferDiffuse(uv) * EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) * EvalDirectionalLight(uv);
+  L = EvalDiffuse(uLightDir, uCameraPos - vPosWorld.xyz, uv) * EvalDirectionalLight(uv);
+
+  // Direct Light
   // vec3 lcolor = pow(clamp(L, vec3(0.0), vec3(1.0)), vec3(1.0 / 2.2));
   // gl_FragColor = vec4(vec3(lcolor.rgb), 1.0);
+  // return;
+
+  // gl_FragColor = vec4(vec3(GetGBufferDepth(uv)), 1.0);
   // return;
 
   vec3 n = normalize(GetGBufferNormalWorld(uv));
@@ -214,9 +219,8 @@ void main() {
     vec3 hitpos = vec3(0.0);
     if (RayMarch(vPosWorld.xyz, dir, hitpos)) {
       vec2 hituv = GetScreenCoordinate(hitpos.xyz);
-      indirect += GetGBufferDiffuse(uv)
-        * EvalDiffuse(dir, uCameraPos - vPosWorld.xyz, uv) / pdf // BSDF(shading point)
-        * GetGBufferDiffuse(hituv) * EvalDiffuse(uLightDir, uCameraPos - hitpos.xyz, hituv) * EvalDirectionalLight(hituv); // Light(sample point)
+      indirect += EvalDiffuse(dir, uCameraPos - vPosWorld.xyz, uv) / pdf // BSDF(shading point)
+        * EvalDiffuse(uLightDir, uCameraPos - hitpos.xyz, hituv) * EvalDirectionalLight(hituv); // Light(sample point)
     }
   }
   indirect /= float(SAMPLE_NUM);

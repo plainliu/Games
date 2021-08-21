@@ -155,3 +155,60 @@ raymarching中
 
 ![image-20210808185030904](C:\liujuanjuan\github-plainliu\Games\Games202\Assignment3\NOTES.assets\image-20210808185030904.png)
 
+
+
+# Mipmap
+
+资料：
+
+- RTR11.6.5
+  digital difffferential analyzer (DDA)
+
+  计算时间长，使用降低分辨率的方式计算，再滤波temporal fifiltering，得到结果
+
+  hierarchical depth buffffer（即要做的mipmap方式）
+
+- Ulrich, Thatcher, “Rendering Massive Terrains Using Chunked Level of Detail Control,” SIGGRAPH Super-Size It! Scaling up to Massive Virtual Worlds course, July 2002. Cited on p. 874, 875
+
+显示深度图?：
+
+1. WebGLRender 注释掉Camera Pass
+2. DirectionalLight的fbo = null，注释掉赋值及检查部分
+3. // 修改shadow fragment shader，显示
+
+
+
+阅读框架：
+
+总共三个pass
+
+1. shadow pass
+
+   计算shadow map
+
+2. buffer pass
+
+   利用pass1 计算的shadow map，计算buffer
+
+   会计算多个buffer，用到`GL_EXT_draw_buffers`扩展，`gbufferShader`中使用扩展，并记录到gl_FragData不同维度中
+
+   fbo创建时默认支持了5个buffer
+
+3. camera pass
+
+   利用pass2的buffer（通过camera.fbo.textures读取），进行着色及屏幕空间tracing
+
+
+
+思路：
+
+将camera.fbo.textures中的深度图生成mipmap，传递给camera pass查询使用
+
+
+
+但是实际上不支持mipmap
+
+不是2的幂的图，而且shader中不支持texture2DLod函数。
+
+单独传buffer进去也可以，费时，要提交作业，放弃。
+

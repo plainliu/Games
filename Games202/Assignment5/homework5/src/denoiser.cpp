@@ -45,6 +45,7 @@ void Denoiser::TemporalAccumulation(const Buffer2D<Float3> &curFilteredColor) {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             // TODO: Temporal clamp
+
             int count = 0;
             Float3 sumColor(0);
             Float3 sumSqrColor(0);
@@ -62,6 +63,7 @@ void Denoiser::TemporalAccumulation(const Buffer2D<Float3> &curFilteredColor) {
                 Float3 sigma = sumSqrColor - Sqr(sumColor);
                 color = Clamp(color, sumColor - sigma * m_colorBoxK, sumColor + sigma * m_colorBoxK);
             }
+
             // TODO: Exponential moving average
             float alpha = m_valid(x, y) ? m_alpha : 1.0f;
             m_misc(x, y) = Lerp(color, curFilteredColor(x, y), alpha);
@@ -75,31 +77,31 @@ Buffer2D<Float3> Denoiser::Filter(const FrameInfo &frameInfo) {
     int width = frameInfo.m_beauty.m_width;
     Buffer2D<Float3> filteredImage = CreateBuffer2D<Float3>(width, height);
 
-//    // Joint bilateral filter
-//    int kernelRadius = 16;
-//#pragma omp parallel for
-//    for (int y = 0; y < height; y++) {
-//        for (int x = 0; x < width; x++) {
-//            // TODO: Joint bilateral filter
-//            // filteredImage(x, y) = frameInfo.m_beauty(x, y);
-//
-//            filteredImage(x, y) = NormalLevelFilter(frameInfo, width, height, x, y, kernelRadius);
-//        }
-//    }
-
-    // A Trous Wavelet
-    int waveletLevel = 3;
-    Buffer2D<Float3> curFilteredColor = CreateBuffer2D<Float3>(width, height);
-    filteredImage.Copy(frameInfo.m_beauty);
-    for (int level = 0; level < waveletLevel; level++) {
+    // Joint bilateral filter
+    int kernelRadius = 16;
 #pragma omp parallel for
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                curFilteredColor(x, y) = ATrousWaveletLevelFilter(frameInfo, filteredImage, width, height, x, y, level);
-            }
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            // TODO: Joint bilateral filter
+            // filteredImage(x, y) = frameInfo.m_beauty(x, y);
+
+            filteredImage(x, y) = NormalLevelFilter(frameInfo, width, height, x, y, kernelRadius);
         }
-        std::swap(curFilteredColor, filteredImage);
     }
+
+//    // A Trous Wavelet
+//    int waveletLevel = 3;
+//    Buffer2D<Float3> curFilteredColor = CreateBuffer2D<Float3>(width, height);
+//    filteredImage.Copy(frameInfo.m_beauty);
+//    for (int level = 0; level < waveletLevel; level++) {
+//#pragma omp parallel for
+//        for (int y = 0; y < height; y++) {
+//            for (int x = 0; x < width; x++) {
+//                curFilteredColor(x, y) = ATrousWaveletLevelFilter(frameInfo, filteredImage, width, height, x, y, level);
+//            }
+//        }
+//        std::swap(curFilteredColor, filteredImage);
+//    }
 
     return filteredImage;
 }

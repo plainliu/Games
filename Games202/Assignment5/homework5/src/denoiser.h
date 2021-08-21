@@ -54,23 +54,21 @@ class Denoiser {
     float m_sigmaPlane = 0.1f;
     float m_sigmaNormal = 0.1f;
     float m_sigmaCoord = 32.0f;
+    float m_colorBoxK = 100.0f;
 
     //±æµÿ≤‚ ‘
-    #define _MYPC_MSC
-    #define _INPUT_BOX
+    //#define _MYPC_MSC
+    //#define _INPUT_BOX
 
     #ifdef _MYPC_MSC
 
     #ifdef _INPUT_BOX
     float m_sigmaColor = 0.6f;
-    float m_colorBoxK = 20.0f;
     #else
     float m_sigmaColor = 10.6f;
-    float m_colorBoxK = 10.0f;
     #endif
 
     #else
     float m_sigmaColor = 0.6f;
-    float m_colorBoxK = 1.0f;
     #endif
 };

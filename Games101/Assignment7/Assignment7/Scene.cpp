@@ -84,7 +84,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     sampleLight( interLight, pdf_light );
     //Shoot a ray from p to x
     Vector3f ws = ( interLight.coords - P ).normalized( );
-    Ray r( p.coords, ws );
+    Ray r( P, ws );
     //If the ray is not blocked in the middle
     Intersection hitLight = intersect( r );
     if ( hitLight.obj && hitLight.obj->hasEmit( ) == true )
@@ -101,11 +101,18 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
 
     //Test Russian Roulette with probability RussianRoulette
     //wi = sample( wo, N )
+    Vector3f wi = m->sample( ray.direction, N );
     //Trace a ray r( p, wi )
+    Intersection hitObj = intersect( Ray( P, wi ));
     //If ray r hit a non - emitting object at q
-    //L_indir = shade( q, wi ) * eval( wo, wi, N ) * dot( wi, N )
-    /// pdf( wo, wi, N ) / RussianRoulette
+    if ( hitObj.happened && hitObj.obj->hasEmit( ) == false )
+    {
+        //L_indir = shade( q, wi ) * eval( wo, wi, N ) * dot( wi, N )
+        // / pdf( wo, wi, N ) / RussianRoulette
+        L_indir = castRay( Ray( P, wi ), 0) * m->eval( -ray.direction, wi, N )
+            * dotProduct( wi, N ) / m->pdf( -ray.direction, wi, N ) / RussianRoulette;
+    }
 
     //Return L_dir + L_indir
-    return lightdir + L_indir;
+    return lightdir + L_indir + m->getEmission( );
 }

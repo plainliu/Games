@@ -1716,14 +1716,17 @@ Moller Trumbore 算法
 - 光线和aabb的求交（三个对面的t区间，求交集）
 
 
-# P4 Ray Tracing 2 ( Acceleration & Radiometry)
+# P14 Ray Tracing 2 ( Acceleration & Radiometry)
 
-GTC
+GTC会议
 
 - DLSS 2.0
 - RTXGI
 
-AABB
+AABB如何加速光线追踪
+
+- Uniform grids
+- Spatial partions
 
 ## Uniform Spatial Patitions(Grids)
 
@@ -1788,13 +1791,253 @@ KD-Tree
 - 定义了光的一些量 Radiant ……
 - 物理正确的光计算
 
+Radiant flux、intensity、iradiance、radiance
+
+学习方法
+
+- WHY 为什么学
+- WHAT 学的是什么
+- HOW 怎么解决、运作（最不重要的）
+
 ### Radiant Energy and Flux
 
-能量 J
+**单位时间**的能量 功率 flux power （lm = lumen 流明）
 
-**单位时间**的能量 功率 flux power （lumen）
+Flux 代表了光的亮度(power)
+
+### Radiant Intensity
+
+光源四面八方发射的能量
+
+单位立体角的能量（单位：candela）
+
+立体角：面积 / 半径^2
+
+微分立体角：sin d d phi
+
+**方向上对应的强度**
+
+均匀的光线，微分立体角上的光的强度，Flux / 4 pi
+
+power per solid **angle**
+
+# P15 Ray Tracing 3(Light Transport & Global Illumination)
+
+## 辐射度量学
+
+### Irradiance
+
+物体表面接收的能量(lux)
+
+power per unit **area**
+
+【Intensity是“角”投射出去的光强度，Irradiance是单位面积接受能量】
+
+面必须和光线**垂直**（参考bulinn - phong，兰伯特；地球上冬夏）
+
+光线在传播过程中r^2衰减：能量没变，越远面积越大，Intensity没有衰减，Irradiance在衰减。
+
+### Radiance
+
+光线在传播中如何度量能量
+
+单位立体角、单位面积的能量
+
+per unit solid angle per projected unit area.
+
+![image-20210822101447137](C:\liujuanjuan\github-plainliu\Games\Games101\GAMES101.assets\image-20210822101447137.png)
+
+单位面积可能给各个方向辐射能量，考虑theta
+
+Radiance: Irradiance per solid angle
+
+Radiance: Intensity per projected unit area
+
+Irradiance和Radiance图形学中用的多
+
+![image-20210822103119046](C:\liujuanjuan\github-plainliu\Games\Games101\GAMES101.assets\image-20210822103119046.png)
+
+## BRDF 【29min-46min】
+
+Bidirectional Reflectance Distribution Function
+
+双向反射分布函数
+
+反射（光线吸收再投射出去）
+
+BRDGF：从某个方向进来的能量，到各个方向反射的能量的分布
+
+理解
+
+1. 光反射出去
+2. 光吸收再反射
+
+入射的irradiance转换成能量辐射radiance的分布
+
+双向：
+
+- 对于某观测方向，加起来所有方向贡献的光线的radiance
+
+反射方程
+
+渲染方程
+
+- 物体自己产生的光 + 反射的光
+
+解渲染方程 P16
+
+多光源，相加
+
+面光源，积分光源
+
+L = E + KL 【50min】
+
+中间推算过程【疑】
+
+L = E + KE + K^2E + ...
+
+全局光照
+
+光栅化能告诉的 L = E + KE，后面的部分不好做
+
+通过ray tracing做后面的部分好做
+
+## 概率论回顾
+
+随机变量
+
+随机变量的分布
+
+概率
+
+概率和为1
+
+期望
+
+连续情况下概率分布
+
+- 概率：积分出的坐标系中的面积
+
+概率密度函数 pdf
+
+Y = f(X)
+
+引入蒙特卡洛积分
+
+# P16 Ray Tracing 4 (Monte Carlo Path Tracing)
+
+蒙特卡洛路径追踪
+
+## 蒙特卡洛积分 【9min】
+
+计算定积分
+
+用一种数值方法来积分
+
+黎曼积分，均分，每一份中间点算高度
+
+蒙特卡洛，随机取一个点，算长方形面积，多采样，算出值；多次取点，求平均。
+
+## Path Tracing【20min】
+
+Whitted风格的问题
+
+1. glossy的效果有问题
+2. 漫反射面间接反射到漫反射的效果没有考虑
+
+康奈尔盒子
+
+Whitted风格有问题，渲染方程没有问题
+
+解渲染方程
+
+用蒙特卡洛积分方法求解
+
+采样方式：最简单可以用平均采样，pdf = 1 / 2pi
+
+直接光，计算渲染方程时，选中的采样方向与光源不相交，则为0，否则返回光的能量。
+
+算间接光：
+
+- hit到物体的情况下，将物体直接光照的结果作为光源计算
+- 得到递归的算法
+
+问题：
+
+1. 递归，光线的数量会爆炸 N^bounces，只有N = 1的情况下不会爆炸
+
+   N = 1的情况下做蒙特卡洛积分，叫路径追踪
+
+   N != 1的情况下，现在少用了，叫分布式的ray tracing
+
+2. 递归的问题，没有停止
+
+   计算机计算次数少停下来，能量就会有损失
+
+   解决方法：RR 俄罗斯轮盘赌 Russian Roulette【54min】
+
+   E = P * (Lo / P) + (1 - P) * 0 = Lo
+
+samples per pixel SPP
+
+采样光源【1h1min】
+
+- 从像素出发采样光源，靠运气
+- 变换思路，从光源采样
+- 把渲染方程写成对光源上的积分
+- 避免采样率不够的时候采样不到光源的问题
+
+拆成两部分
+
+- 光源的贡献
+  - 对光源采样
+- 间接光的贡献
+  - 用RR
+
+采样光源的问题
+
+- 判断遮挡问题
+
+对于路径追踪，点光源不好做
+
+path tracing 可以做到真实的照片级别的结果
+
+以前 Ray tracing是Whitted风格的
+
+现在是一系列光线传播方法的集合
+
+其他问题
+
+- 针对特定的采样函数，重要性采样
+- 好的随机数，低差异序列
+- 结合采样立体角和光源，multiple imp. sampling
+- 像素中不同结果的合并，加权
+- radiance到颜色，需要做gamma 矫正
+- ……
+
+# P17
 
 
+
+# ShaderToy
+
+https://www.shadertoy.com/view/stjXDD 国旗
+
+https://www.shadertoy.com/view/NtlSDs
+
+# 群友推荐资料
+
+[Graphics Mesh Resources（图形学模型资源）? - 知乎 (zhihu.com)](https://www.zhihu.com/question/49226908)
+
+https://github.com/ACskyline/Wave-Particles-with-Interactive-Vortices
+
+
+
+# PPM浏览器
+
+openseeit
+
+WPS图片
 
 
 

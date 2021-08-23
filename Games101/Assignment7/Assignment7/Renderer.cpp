@@ -3,6 +3,7 @@
 //
 
 #include <fstream>
+#include <thread>
 #include "Scene.hpp"
 #include "Renderer.hpp"
 
@@ -21,26 +22,40 @@ void Renderer::Render(const Scene& scene)
     float scale = tan(deg2rad(scene.fov * 0.5));
     float imageAspectRatio = scene.width / (float)scene.height;
     Vector3f eye_pos(278, 273, -800);
-    int m = 0;
 
     // change the spp value to change sample ammount
     int spp = 16;
     std::cout << "SPP: " << spp << "\n";
-    for (uint32_t j = 0; j < scene.height; ++j) {
-        for (uint32_t i = 0; i < scene.width; ++i) {
-            // generate primary ray direction
-            float x = (2 * (i + 0.5) / (float)scene.width - 1) *
-                      imageAspectRatio * scale;
-            float y = (1 - 2 * (j + 0.5) / (float)scene.height) * scale;
+//#pragma omp parallel for
+    auto func = [&](int left, int right, int bottom, int top)
+    {
+        for (uint32_t j = left; j < right; ++j) {
+            for (uint32_t i = bottom; i < top; ++i) {
+                // generate primary ray direction
+                float x = (2 * (i + 0.5) / (float)scene.width - 1) *
+                          imageAspectRatio * scale;
+                float y = (1 - 2 * (j + 0.5) / (float)scene.height) * scale;
 
-            Vector3f dir = normalize(Vector3f(-x, y, 1));
-            for (int k = 0; k < spp; k++){
-                framebuffer[m] += scene.castRay(Ray(eye_pos, dir), 0) / spp;  
+                Vector3f dir = normalize(Vector3f(-x, y, 1));
+                int index = j * scene.width + i;
+                for (int k = 0; k < spp; k++){
+                    framebuffer[index] += scene.castRay(Ray(eye_pos, dir), 0) / spp;
+                }
             }
-            m++;
+            //UpdateProgress(j / (float)scene.height);
+            UpdateProgress( ( j - left ) / (float)( right - left ) );
         }
-        UpdateProgress(j / (float)scene.height);
-    }
+    };
+
+    int halfw = scene.width / 2, halfh = scene.height / 2;
+    std::thread t1( func, 0, halfw, 0, halfh );
+    std::thread t2( func, 0, halfw, halfh, scene.height );
+    std::thread t3( func, halfw, scene.width, 0, halfh );
+    std::thread t4( func, halfw, scene.width, halfh, scene.height );
+    t1.join( );
+    t2.join( );
+    t3.join( );
+    t4.join( );
     UpdateProgress(1.f);
 
     // save framebuffer to file

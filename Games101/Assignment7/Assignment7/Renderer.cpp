@@ -4,6 +4,7 @@
 
 #include <fstream>
 #include <thread>
+#include <mutex>
 #include "Scene.hpp"
 #include "Renderer.hpp"
 
@@ -23,11 +24,13 @@ void Renderer::Render(const Scene& scene)
     float imageAspectRatio = scene.width / (float)scene.height;
     Vector3f eye_pos(278, 273, -800);
 
+    std::mutex mtxp;
+    std::vector<float> progress( 4, 0.0f );
+
     // change the spp value to change sample ammount
     int spp = 16;
     std::cout << "SPP: " << spp << "\n";
-//#pragma omp parallel for
-    auto func = [&](int left, int right, int bottom, int top)
+    auto func = [&]( int id, int left, int right, int bottom, int top)
     {
         for (uint32_t j = left; j < right; ++j) {
             for (uint32_t i = bottom; i < top; ++i) {
@@ -42,21 +45,23 @@ void Renderer::Render(const Scene& scene)
                     framebuffer[index] += scene.castRay(Ray(eye_pos, dir), 0) / spp;
                 }
             }
-            //UpdateProgress(j / (float)scene.height);
-            UpdateProgress( ( j - left ) / (float)( right - left ) );
+            progress[id] = ( j - left ) / (float)( right - left );
+            mtxp.lock( );
+            UpdateProgress( progress );
+            mtxp.unlock( );
         }
     };
 
     int halfw = scene.width / 2, halfh = scene.height / 2;
-    std::thread t1( func, 0, halfw, 0, halfh );
-    std::thread t2( func, 0, halfw, halfh, scene.height );
-    std::thread t3( func, halfw, scene.width, 0, halfh );
-    std::thread t4( func, halfw, scene.width, halfh, scene.height );
+    std::thread t1( func, 0, 0, halfw, 0, halfh );
+    std::thread t2( func, 1, 0, halfw, halfh, scene.height );
+    std::thread t3( func, 2, halfw, scene.width, 0, halfh );
+    std::thread t4( func, 3, halfw, scene.width, halfh, scene.height );
     t1.join( );
     t2.join( );
     t3.join( );
     t4.join( );
-    UpdateProgress(1.f);
+    UpdateProgress( progress );
 
     // save framebuffer to file
     FILE* fp = fopen("binary.ppm", "wb");

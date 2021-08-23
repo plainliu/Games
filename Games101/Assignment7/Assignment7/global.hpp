@@ -37,17 +37,23 @@ inline float get_random_float()
     return dist(rng);
 }
 
-inline void UpdateProgress(float progress)
+inline void UpdateProgress(std::vector<float> progress)
 {
-    int barWidth = 70;
+    //int barWidth = 70;
 
-    std::cout << "[";
-    int pos = barWidth * progress;
-    for (int i = 0; i < barWidth; ++i) {
-        if (i < pos) std::cout << "=";
-        else if (i == pos) std::cout << ">";
-        else std::cout << " ";
+    for ( auto p : progress )
+    {
+        //std::cout << "[";
+        //int pos = barWidth * p;
+        //for ( int i = 0; i < barWidth; ++i ) {
+        //    if ( i < pos ) std::cout << "=";
+        //    else if ( i == pos ) std::cout << ">";
+        //    else std::cout << " ";
+        //}
+        //std::cout << "] " << int(p * 100.0) << " %\t";
+
+        std::cout << "[" << int( p * 100.0 ) << "\t % ] " << "\t";
     }
-    std::cout << "] " << int(progress * 100.0) << " %\r";
+    std::cout << "\r";
     std::cout.flush();
 };

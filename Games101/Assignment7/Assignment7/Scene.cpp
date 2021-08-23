@@ -75,44 +75,29 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     // Test Normal
     //hitColor = (N + 1.0f) * 0.5f;
 
+    // SampleLight
     Vector3f lightdir(0.f);
-
     Intersection interLight;
-    float pdf_light = 0.0f;
-    //sampleLight( inter, pdf_light )
-    //Get x, ws, NN, emit from inter
+    float pdf_light;
     sampleLight( interLight, pdf_light );
-    //Shoot a ray from p to x
     Vector3f ws = ( interLight.coords - P ).normalized( );
-    Ray r( P, ws );
-    //If the ray is not blocked in the middle
-    Intersection hitLight = intersect( r );
+    Intersection hitLight = intersect( Ray( P, ws ) );
     if ( hitLight.obj && hitLight.obj->hasEmit( ) == true )
     {
-        //L_dir = emit * eval( wo, ws, N ) * dot( ws, N ) * dot( ws,
-        //    NN ) / |x - p | ^ 2 / pdf_light
         lightdir = interLight.emit * m->eval( -ray.direction, ws, N )
             * dotProduct( ws, N) * dotProduct( -ws, interLight.normal)
             / pow( ( P - interLight.coords ).norm(), 2 ) / pdf_light;
     }
 
-    //L_indir = 0.0
+    // Test Russian Roulette with probability RussianRoulette
     Vector3f L_indir( 0.f );
-
-    //Test Russian Roulette with probability RussianRoulette
-    //wi = sample( wo, N )
     Vector3f wi = m->sample( ray.direction, N );
-    //Trace a ray r( p, wi )
     Intersection hitObj = intersect( Ray( P, wi ));
-    //If ray r hit a non - emitting object at q
     if ( hitObj.happened && hitObj.obj->hasEmit( ) == false )
     {
-        //L_indir = shade( q, wi ) * eval( wo, wi, N ) * dot( wi, N )
-        // / pdf( wo, wi, N ) / RussianRoulette
         L_indir = castRay( Ray( P, wi ), 0) * m->eval( -ray.direction, wi, N )
             * dotProduct( wi, N ) / m->pdf( -ray.direction, wi, N ) / RussianRoulette;
     }
 
-    //Return L_dir + L_indir
     return lightdir + L_indir + m->getEmission( );
 }

@@ -28,12 +28,12 @@ void Renderer::Render(const Scene& scene)
     std::vector<float> progress( 4, 0.0f );
 
     // change the spp value to change sample ammount
-    int spp = 16;
+    int spp = 64;
     std::cout << "SPP: " << spp << "\n";
-    auto func = [&]( int id, int left, int right, int bottom, int top)
+    auto func = [&]( int id, int left, int right, int up, int down)
     {
         for (uint32_t j = left; j < right; ++j) {
-            for (uint32_t i = bottom; i < top; ++i) {
+            for (uint32_t i = up; i < down; ++i) {
                 // generate primary ray direction
                 float x = (2 * (i + 0.5) / (float)scene.width - 1) *
                           imageAspectRatio * scale;

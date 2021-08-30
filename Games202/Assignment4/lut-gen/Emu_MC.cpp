@@ -60,7 +60,7 @@ float GeometrySchlickGGX(float NdotV, float roughness) {
     float a = roughness;
     float k = (a * a) / 2.0f;
 
-    float nom = NdotV;
+    float nom = std::max(NdotV, 0.f);
     float denom = NdotV * (1.0f - k) + k;
 
     return nom / denom;
@@ -82,8 +82,20 @@ Vec3f IntegrateBRDF(Vec3f V, float roughness, float NdotV) {
     
     samplePoints sampleList = squareToCosineHemisphere(sample_count);
     for (int i = 0; i < sample_count; i++) {
-      // TODO: To calculate (fr * ni) / p_o here
-      
+        // TODO: To calculate (fr * ni) / p_o here
+        Vec3f L = sampleList.directions[i];
+        float pdf = sampleList.PDFs[i];
+
+        Vec3f H = normalize(V + L);
+        float NdotL = dot(N, L);
+
+        float GGX = DistributionGGX(N, H, roughness);
+        float G = GeometrySmith(roughness, std::max(NdotV, 0.f), std::max(NdotL, 0.f));
+
+        float v = GGX * G * NdotL / pdf / (4.f * NdotL * NdotV);
+        A += v;
+        B += v;
+        C += v;
     }
 
     return {A / sample_count, B / sample_count, C / sample_count};

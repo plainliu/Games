@@ -82,7 +82,9 @@ Vec3f IntegrateEmu(Vec3f V, float roughness, float NdotV, Vec3f Ei) {
         
     }
 
-    return Eavg / sample_count;
+    //return Eavg / sample_count;
+
+    return Ei * NdotV * 2.f;
 }
 
 

@@ -23,7 +23,7 @@ namespace CGL {
                 position = end;
             else
                 position = start + springstep * i;
-            masses.push_back(new Mass(position, node_mass, pinned_nodes[i]));
+            masses.push_back(new Mass(position, node_mass, false));
 
             if (i > 0)
                 springs.push_back(new Spring(masses[i - 1], masses[i], k));
@@ -40,6 +40,10 @@ namespace CGL {
         for (auto &s : springs)
         {
             // TODO (Part 2): Use Hooke's law to calculate the force on a node
+            Vector2D d = s->m2->position - s->m1->position;
+            Vector2D f = s->k * d.unit() * (d.norm() - s->rest_length);
+            s->m1->forces += f;
+            s->m2->forces -= f;
         }
 
         for (auto &m : masses)
@@ -47,8 +51,21 @@ namespace CGL {
             if (!m->pinned)
             {
                 // TODO (Part 2): Add the force due to gravity, then compute the new velocity and position
+                m->forces += gravity * m->mass;
 
                 // TODO (Part 2): Add global damping
+                float kd  = 0.1;
+                m->forces += -kd * m->velocity;
+
+                Vector2D a = m->forces / m->mass;
+
+                // explicit method
+                // m->position += m->velocity * delta_t;
+                // m->velocity += a * delta_t;
+
+                // semi-implicit method
+                m->velocity += a * delta_t;
+                m->position += m->velocity * delta_t;
             }
 
             // Reset all forces on each mass

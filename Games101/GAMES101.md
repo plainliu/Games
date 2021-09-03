@@ -481,12 +481,12 @@ $$
 平移矩阵
 $$
 T_{view} = 
-\begin{vmatrix}
+\begin{bmatrix}
 1 & 0 & 0 & -x_e\\
 0 & 1 & 0 & -y_e\\
 0 & 0 & 1 & -z_e\\
 0 & 0 & 0 & 1\\
-\end{vmatrix}
+\end{bmatrix}
 $$
 旋转矩阵
 
@@ -2116,6 +2116,69 @@ BRDF的性质
 - 存储、压缩
 
 库 MERL BRDF Database
+
+# P18 Advanced Topics in Rendering
+
+## 高级的光路传播light transport
+
+无偏（蒙特卡洛的期望无偏）
+
+- Path Tracing
+
+- BDPT 双向路径追踪
+
+- MLT
+
+  马尔可夫链的蒙特卡洛方法 MCMC
+
+  周围产生样本
+
+  适合做复杂的光路传播
+
+  Caustics（SDS）
+
+  坏处：收敛速度估计困难
+
+有偏
+
+- 光子映射
+
+  Caustics
+
+- VCM
+
+  结合BDPT和光子映射
+
+- IR
+
+  实时辐射度，多光源问题
+
+  VPL 虚拟光源
+
+  问题：缝隙处有发光；不能做glossy物体
+
+光子映射
+
+1. 光子照到diffuse时停止
+2. 计算局部的密度估计（邻近的多少个光子）
+
+## 外观建模【38min】
+
+BRDF
+
+# P19 Cameras, Lenses and Light Fields
+
+
+
+# P20 Color and Perception
+
+
+
+# P21 Animation
+
+
+
+# P22 Animation (cont.)
 
 
 

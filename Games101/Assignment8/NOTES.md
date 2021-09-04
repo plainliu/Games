@@ -33,5 +33,5 @@ sudo apt install xorg-dev
 
 问题2
 
-explicit method 计算前几帧看着没问题，之后质点乱飞【待解决】
+explicit method 计算前几帧看着没问题，之后质点乱飞【待解决】（本身算法不稳定，加长步长进行显示）
 

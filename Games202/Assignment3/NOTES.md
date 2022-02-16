@@ -153,7 +153,7 @@ raymarching中
 
     
 
-![image-20210808185030904](C:\liujuanjuan\github-plainliu\Games\Games202\Assignment3\NOTES.assets\image-20210808185030904.png)
+![image-20210808185030904](NOTES.assets\image-20210808185030904.png)
 
 
 

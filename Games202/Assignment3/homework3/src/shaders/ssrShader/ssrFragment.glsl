@@ -72,7 +72,9 @@ vec4 Project(vec4 a) {
 }
 
 float GetDepth(vec3 posWorld) {
-  float depth = (vWorldToScreen * vec4(posWorld, 1.0)).w;
+  vec4 tmp = (vWorldToScreen * vec4(posWorld, 1.0));
+  float depth = (tmp.z / tmp.w + 1.0) / 2.0;
+  // float depth = (tmp.z / tmp.w);
   return depth;
 }
 

@@ -1,0 +1,6 @@
+[submodule "VulkanTutorial/ThirdParty/glfw"]
+	path = VulkanTutorial/ThirdParty/glfw
+	url = https://github.com/glfw/glfw.git
+[submodule "VulkanTutorial/ThirdParty/glm"]
+	path = VulkanTutorial/ThirdParty/glm
+	url = https://github.com/g-truc/glm.git

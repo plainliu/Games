@@ -33,6 +33,38 @@ def part1_calculate_T_pose(bvh_file_path):
     joint_name = None
     joint_parent = None
     joint_offset = None
+
+    # 读取bvh文件
+    with open(bvh_file_path, 'r') as f:
+        lines = f.readlines()
+        for i in range(len(lines)):
+            if lines[i].startswith('HIERARCHY'):
+                break
+
+        joint_name = []
+        joint_parent = []
+        joint_offset = []
+
+        jointStack = []
+        for j in range(i, len(lines)):
+            words = lines[j].split()
+            if words[0] == 'ROOT' or words[0] == 'JOINT':
+                joint_name.append(words[1])
+                joint_parent.append(jointStack[-1] if len(jointStack) > 0 else -1)
+                joint_offset.append([0, 0, 0])
+            elif words[0] == 'End' and words[1] == 'Site':
+                joint_name.append(joint_name[jointStack[-1]] + '_end')
+                joint_parent.append(jointStack[-1])
+                joint_offset.append([0, 0, 0])
+            elif words[0] == 'OFFSET':
+                joint_offset[jointStack[-1]] = [float(words[1]), float(words[2]), float(words[3])]
+            elif words[0] == '{':
+                jointStack.append(len(joint_name) - 1)
+            elif words[0] == '}':
+                jointStack.pop()
+                if len(jointStack) == 0 and lines[j+1].startswith('MOTION'):
+                    break
+
     return joint_name, joint_parent, joint_offset
 
 
